@@ -793,7 +793,7 @@ function nfw_check_request( $nfw_rules, $nfw_options ) {
 				$where == 'SESSION'
 			) {
 
-				if ( empty($GLOBALS['_' . $where]) ) {continue;}
+				if (! isset( $GLOBALS['_'. $where ] ) ) { continue; }
 
 				foreach ($GLOBALS['_' . $where] as $key => $val) {
 

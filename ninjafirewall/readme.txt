@@ -3,7 +3,7 @@ Contributors: nintechnet, bruandet
 Tags: security, firewall, malware, virus, protection, hack, antispam, scanner, hacked site, brute force, seguridad, seguranca, sicherheit, sicurezza, veiligheid, classicpress
 Requires at least: 4.9
 Tested up to: 6.4
-Stable tag: 4.5.10
+Stable tag: 4.5.11
 Requires PHP: 7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -207,6 +207,13 @@ WordPress Sicherheit Plugin.
 == Changelog ==
 
 Need more security? Take the time to explore our supercharged Premium edition: [NinjaFirewall WP+ Edition](https://nintechnet.com/ninjafirewall/wp-edition/?comparison)
+
+= 4.5.11 =
+
+* Updated Charts.js.
+* WP+ Edition (Premium): updated PayPal IPN and Automattic IP addresses.
+* WP+ Edition (Premium): Updated GeoIP databases.
+* Small fixes and adjustments.
 
 = 4.5.10 =
 
