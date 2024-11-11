@@ -54,7 +54,7 @@ if ( defined( 'NFUPDATESDO' ) && NFUPDATESDO == 2 ) {
 	// Scheduled updates or plugin update
 	$caching_id = sha1( home_url() );
 	$update_url = array(
-		$proto . '://updates.nintechnet.com/index.php',
+		'https://api.nintechnet.com/ninjafirewall/rules-update',
 		"?version=4&cid={$caching_id}&edn=wp&rt={$rules_type}&su={$sched_updates}",
 		"?rules=4&cid={$caching_id}&edn=wp&rt={$rules_type}&su={$sched_updates}"
 	);
@@ -62,7 +62,30 @@ if ( defined( 'NFUPDATESDO' ) && NFUPDATESDO == 2 ) {
 
 // NFUPDATESDO: scheduled update (1), installation (2) or plugin update (3 - deprecated since v3.8)
 if (defined('NFUPDATESDO') ) {
-	define('NFW_RULES', nf_sub_do_updates($update_url, $update_log, NFUPDATESDO));
+
+	$rules_lock = NFW_LOG_DIR .'/nfwlog/cache/rules';
+
+	if ( NFUPDATESDO != 2 ) { // Shouldn't apply to (re)installation
+		if ( $nfw_options['sched_updates'] == 1 ) {
+			$interval = 3000; // 50mn
+		} elseif ( $nfw_options['sched_updates'] == 2 ) {
+			$interval = 39600; // 11h
+		} else {
+			$interval = 82800; // 23h
+		}
+
+		if ( file_exists( $rules_lock ) ) {
+			$rules_lock_mtime = filemtime( $rules_lock );
+			if ( time() - $interval < $rules_lock_mtime ) {
+				return;
+			}
+			unlink( $rules_lock );
+		}
+	}
+
+	touch( $rules_lock );
+
+	define('NFW_RULES', nf_sub_do_updates( $update_url, $update_log, NFUPDATESDO ) );
 	return;
 }
 

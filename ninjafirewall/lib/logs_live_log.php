@@ -31,7 +31,7 @@ if ( NF_DISABLED ) {
 	$err_msg = esc_html__('Error: NinjaFirewall must be enabled and working '.
 					'in order to use this feature.', 'ninjafirewall');
 }
-if ( empty( $_SESSION['nfw_goodguy'] ) ) {
+if ( empty( NinjaFirewall_session::read('nfw_goodguy') ) ) {
 	$err_msg = esc_html__('Warning: You must be whitelisted in order to use Live Log: click on '.
 		'the Firewall Policies menu and ensure that the "Add the Administrator to the whitelist" '.
 		'option is enabled.', 'ninjafirewall');
@@ -57,7 +57,8 @@ if (! empty( $err_msg ) ) {
 	'<?php exit; ?>',
 	LOCK_EX
 );
-$_SESSION['nfw_livelog'] = 1;
+
+NinjaFirewall_session::write( ['nfw_livelog' => 1 ] );
 
 if (! isset($_COOKIE['nfwscroll']) || ! empty($_COOKIE['nfwscroll']) ) {
 	// Default, if not set

@@ -403,29 +403,30 @@ function nf_sub_event_save() {
 
 function nf_daily_report() {
 
-	// Send a daily report to the admin(s):
-	$nfw_options = nfw_get_option( 'nfw_options' );
+	// Send a daily report to the admin(s)
+	$nfw_options = nfw_get_option('nfw_options');
 
 	// We check if it is enabled here just in case something went
-	// wrong with the task scheduler:
+	// wrong with the task scheduler
 	if ( empty( $nfw_options['a_52']) ) {
 		return;
 	}
 
 	// Make sure we didn't send it already (if WP-Cron is ran twice by mistake)
 	if ( is_multisite() ) {
-		$nf_transient = get_site_transient( 'nfw_dailyreport' );
+		$nf_transient = get_site_transient('nfw_dailyreport');
 	} else {
-		$nf_transient = get_transient( 'nfw_dailyreport' );
+		$nf_transient = get_transient('nfw_dailyreport');
 	}
+
 	if ( $nf_transient == false || $nf_transient < time() ) {
 		if ( is_multisite() ) {
-			set_site_transient( 'nfw_dailyreport', time() + 3600, 3600 );
+			set_site_transient('nfw_dailyreport', time() + 3600, 3600 );
 		} else {
-			set_transient( 'nfw_dailyreport', time() + 3600, 3600 );
+			set_transient('nfw_dailyreport', time() + 3600, 3600 );
 		}
 
-		$logstats = array();
+		$logstats = [];
 		$logstats = nf_daily_report_log();
 
 		nf_daily_report_email( $logstats );
@@ -435,40 +436,42 @@ function nf_daily_report() {
 // ---------------------------------------------------------------------
 function nf_daily_report_log() {
 
-	if (date('j') == 1) {
-		$cur_month_log = date('Y-m', strtotime(date('Y-m')." -1 month"));
+	if ( date('j') == 1 ) {
+		$cur_month_log = date('Y-m', strtotime( date('Y-m') .' -1 month') );
 	} else {
 		$cur_month_log = date('Y-m');
 	}
-	$previous_day	= strtotime( date('Y-m-d 00:00:01', strtotime("-1 day")) );
-	$log_file  		= NFW_LOG_DIR . '/nfwlog/firewall_' . $cur_month_log;
-	$logstats		= array( 0 => 0, 1 => 0, 2 => 0, 3 => 0, 5 => 0);
+	$previous_day	= strtotime( date('Y-m-d 00:00:01', strtotime('-1 day') ) );
+	$logstats		= [ 0 => 0, 1 => 0, 2 => 0, 3 => 0, 5 => 0 ];
 
-	$glob = glob($log_file . "*.php");
-	if ( is_array($glob)) {
-		// Parse each log :
-		foreach($glob as $file) {
-			// Stat the file; if it's older than 24 hours,
-			// we don't waste our time to parse it:
-			$log_stat = stat($file);
-			if ( $log_stat['mtime'] < $previous_day ) {
-				continue;
-			}
+	$files = NinjaFirewall_helpers::nfw_glob(
+		NFW_LOG_DIR .'/nfwlog', 'firewall_'. $cur_month_log, true, true
+	);
 
-			$log_lines = file($file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
-			foreach ($log_lines as $line) {
-				if ( preg_match( '/^\[(\d{10})\]\s+\[.+?\]\s+\[.+?\]\s+\[#\d{7}\]\s+\[\d+\]\s+\[([1235])\]\s+\[/', $line, $match) ) {
-					// Fetch last 24 hours only :
-					if ( $match[1] > $previous_day && $match[1] < $previous_day + 86400 ) {
-						++$logstats[$match[2]];
-						if ( strpos($line, 'Brute-force attack detected') !== FALSE ) {
-							++$logstats[0];
-						}
+	// Parse each log
+	foreach( $files as $file ) {
+
+		// Stat the file: if it's older than 24 hours, we skip it
+		$log_stat = stat( $file );
+		if ( $log_stat['mtime'] < $previous_day ) {
+			continue;
+		}
+
+		$log_lines = file( $file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
+		foreach ( $log_lines as $line ) {
+			if ( preg_match(
+				'/^\[(\d{10})\]\s+\[.+?\]\s+\[.+?\]\s+\[#\d{7}\]\s+\[\d+\]\s+\[([1235])\]\s+\[/',
+				$line, $match )
+			) {
+				// Fetch last 24 hours only
+				if ( $match[1] > $previous_day && $match[1] < $previous_day + 86400 ) {
+					++$logstats[ $match[2] ];
+					if ( strpos( $line, 'Brute-force attack detected') !== FALSE ) {
+						++$logstats[0];
 					}
 				}
 			}
 		}
-
 	}
 	return $logstats;
 }

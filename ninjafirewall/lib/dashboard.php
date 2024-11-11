@@ -271,7 +271,7 @@ if (! empty( $_POST['delete-error-log'] ) ){
 			<?php
 		}
 
-		if ( empty( $_SESSION['nfw_goodguy'] ) ) {
+		if ( empty( NinjaFirewall_session::read('nfw_goodguy') ) ) {
 			?>
 			<tr>
 				<th scope="row" class="row-med"><?php _e('Admin user', 'ninjafirewall') ?></th>
@@ -299,14 +299,44 @@ if (! empty( $_POST['delete-error-log'] ) ){
 		// Try to find out if there is any "lost" session between the firewall
 		// and the plugin part of NinjaFirewall (could be a buggy plugin killing
 		// the session etc), unless we just installed it
-		if ( defined( 'NFW_SWL' ) && ! empty( $_SESSION['nfw_goodguy'] ) && empty( $_REQUEST['nfw_firstrun'] ) ) {
+		if ( defined( 'NFW_SWL' ) && ! empty( NinjaFirewall_session::read('nfw_goodguy') ) && empty( $_REQUEST['nfw_firstrun'] ) ) {
 			?>
 			<tr>
-				<th scope="row" class="row-med"><?php _e('User session', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-warning nfw-warning"></span><?php _e('It seems that the user session set by NinjaFirewall was not found by the firewall script.', 'ninjafirewall') ?></td>
+				<th scope="row" class="row-med"><?php esc_html_e('User session', 'ninjafirewall') ?></th>
+				<td><span class="dashicons dashicons-warning nfw-warning"></span><?php esc_html_e('It seems that the user session set by NinjaFirewall was not found by the firewall script.', 'ninjafirewall') ?></td>
+			</tr>
+			<?php
+		} else {
+			?>
+			<tr>
+				<th scope="row" class="row-med"><?php esc_html_e('User session', 'ninjafirewall') ?></th>
+				<?php
+				if ( defined('NFWSESSION') ) {
+					?>
+					<td><?php
+						printf(
+							/* Translators: <a> and </a> anchor tags */
+							esc_html__('You are using NinjaFirewall sessions. If you want to switch to PHP sessions, please %sconsult our blog%s.', 'ninjafirewall'),
+							'<a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/#user_session" target="_blank" rel="noreferrer noopener">', '</a>'
+						); ?>
+					</td>
+					<?php
+				} else {
+					?>
+					<td><?php
+						printf(
+							/* Translators: <a> and </a> anchor tags */
+							esc_html__('You are using PHP sessions. If you want to switch to NinjaFirewall sessions, please %sconsult our blog%s.', 'ninjafirewall'),
+							'<a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/#user_session" target="_blank" rel="noreferrer noopener">', '</a>'
+						); ?>
+					</td>
+					<?php
+				}
+			?>
 			</tr>
 			<?php
 		}
+
 
 		if ( ! empty( $nfw_options['clogs_pubkey'] ) ) {
 			$err_msg = $ok_msg = '';
@@ -392,11 +422,8 @@ if (! empty( $_POST['delete-error-log'] ) ){
 
 		if (! defined('NF_DISABLE_PHPINICHECK') && ! defined('NFW_WPWAF') ) {
 
-			// Note: any potential PHP session will be closed below.
-
 			// Make sure the PHP INI is not viewable by webusers
 			if ( file_exists( ABSPATH .'php.ini' ) ) {
-				@session_write_close();
 				$res = nfw_is_inireadable( 'php.ini' );
 				if ( $res !== false ) {
 					?>
@@ -409,7 +436,6 @@ if (! empty( $_POST['delete-error-log'] ) ){
 			}
 			if ( file_exists( ABSPATH .'.user.ini' ) ) {
 				$res = nfw_is_inireadable( '.user.ini' );
-				@session_write_close();
 				if ( $res !== false ) {
 					?>
 					<tr>
@@ -419,7 +445,6 @@ if (! empty( $_POST['delete-error-log'] ) ){
 					<?php
 				}
 			}
-
 		}
 
 		// Error log

@@ -1,9 +1,9 @@
 === NinjaFirewall (WP Edition) - Advanced Security Plugin and Firewall ===
 Contributors: nintechnet, bruandet
-Tags: security, firewall, malware, virus, protection, hack, antispam, scanner, hacked site, brute force, seguridad, seguranca, sicherheit, sicurezza, veiligheid, classicpress
+Tags: security, firewall, malware, virus, protection
 Requires at least: 4.9
-Tested up to: 6.4
-Stable tag: 4.5.11
+Tested up to: 6.7
+Stable tag: 4.7
 Requires PHP: 7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -118,7 +118,7 @@ Check out our new supercharged edition: [NinjaFirewall WP+ Edition](https://nint
 
 = Requirements =
 
-* WordPress 4.7+
+* WordPress 4.9+
 * Admin/Superadmin with `manage_options` + `unfiltered_html capabilities`.
 * PHP 7.1+
 * MySQL or MariaDB with MySQLi extension
@@ -207,6 +207,26 @@ WordPress Sicherheit Plugin.
 == Changelog ==
 
 Need more security? Take the time to explore our supercharged Premium edition: [NinjaFirewall WP+ Edition](https://nintechnet.com/ninjafirewall/wp-edition/?comparison)
+
+= 4.7 =
+
+* This new version introduces NinjaFirewall sessions, an alternative to PHP sessions. They are an hybrid of PHP sessions and object caching, without session blocking. If you want to switch between PHP sessions and NinjaFirewall sessions, go to "NinjaFirewall > Dashboard" and follow the instructions.
+* Fixed a "Undefined constant NFW_RULES" fatal error when migrating NinjaFirewall to another host.
+* We have a new API (updates, security rules etc): api.nintechnet.com. Make sure to whitelist this subdomain if you are filtering outgoing connections.
+* Updated Charts.js.
+* WP+ Edition (Premium): Updated GeoIP databases.
+
+= 4.6.1 =
+
+* WP+ Edition (Premium): You can now enter your license key from WP CLI. Type "wp ninjafirewall license" and enter your license at the prompt.
+* Fixed an issue with bulk user deletion: when multiple users were deleted at once, only the first one was written to the firewall log.
+* Fixed an issue with the login protection: after disabling it and logging out, NinjaFirewall was still displaying a notice on the login page.
+* Fixed a potential PHP fatal error: Attempt to modify property "no_update" on bool.
+* Replaced all calls to the PHP glob() function with DirectoryIterator() to make file search compatible with remote files.
+* Fixed an issue where some scheduled tasks were executed too often on multisite installations.
+* WP+ Edition (Premium): Updated GeoIP databases.
+* Updated Charts.js.
+* Many additional small fixes and adjustments.
 
 = 4.5.11 =
 

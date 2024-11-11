@@ -31,16 +31,9 @@ function nfw_check_security_updates() {
 	$nfw_options = nfw_get_option('nfw_options');
 	if ( empty( $nfw_options['secupdates'] ) ) { return; }
 
-	$found = array();
+	$found = [];
 
-	// If your server can't remotely connect to a SSL port, add this
-	// to your wp-config.php script: `define('NFW_DONT_USE_SSL', 1);`
-	if ( defined( 'NFW_DONT_USE_SSL' ) ) {
-		$proto = "http";
-	} else {
-		$proto = "https";
-	}
-	$url = "$proto://updates.nintechnet.com/secupdates";
+	$url = 'https://api.nintechnet.com/ninjafirewall/security-update';
 
 	// Fetch latest data:
 	$list = array();

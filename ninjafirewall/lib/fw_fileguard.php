@@ -52,7 +52,15 @@ function fw_fileguard() {
 						'REQUEST_URI: ' . $_SERVER['REQUEST_URI'] . "\n" .
 						NF_FW_FG_MSG_2 .' '. date('F j, Y @ H:i:s T', $nfw_['nfw_options']['fg_stat']['ctime'] ) . "\n\n" .
 						NF_FW_SIGNATURE ."\n";
-					mail( $nfw_['nfw_options']['alert_email'], $nfw_['nfw_options']['m_subject'], $nfw_['nfw_options']['m_msg'], $nfw_['nfw_options']['m_headers']);
+
+					if ( function_exists('mail') ) {
+						mail(
+							$nfw_['nfw_options']['alert_email'],
+							$nfw_['nfw_options']['m_subject'],
+							$nfw_['nfw_options']['m_msg'],
+							$nfw_['nfw_options']['m_headers']
+						);
+					}
 					// Remember it so that we don't spam the admin each time the script is requested :
 					touch($nfw_['log_dir'] . '/cache/fg_' . $nfw_['nfw_options']['fg_stat']['ino'] . '.php');
 				}

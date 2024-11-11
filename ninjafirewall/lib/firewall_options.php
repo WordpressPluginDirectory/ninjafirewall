@@ -180,26 +180,32 @@ return;
 
 function nf_sub_options_confbackup() {
 
-	$glob = glob( NFW_LOG_DIR . '/nfwlog/cache/backup_*.php' );
-	$res = '';
+	$res		= '';
+	$dir		= NFW_LOG_DIR .'/nfwlog/cache';
+	$files	= NinjaFirewall_helpers::nfw_glob( $dir, 'backup_.+?\.php$', true, true );
 
-	if ( is_array( $glob ) && ! empty( $glob[0] ) ) {
-		sort( $glob );
-		$res .= '<select name="backup_file" onchange="nfwjs_select_backup(this.value)"><option selected value="">'.
-		__('Available backup files', 'ninjafirewall') .'</option>';
-		foreach( $glob as $file ) {
-			if ( preg_match( '`/(backup_(\d{10})_.+\.php)$`', $file, $match ) ) {
-				$date = ucfirst( date_i18n( 'F d, Y @ g:i A', $match[2] ) );
-				$size = ' ('. number_format_i18n( filesize( $file ) ) .' '. __('bytes', 'ninjafirewall') .')';
-				$res .= '<option value="'. htmlentities( $match[1] ) .'" title="'. htmlentities( $file ) .'">'. htmlentities( $date . $size ) .'</option>';
+	if (! empty( $files[0] ) ) {
+		$res .= '<select name="backup_file" onchange="nfwjs_select_backup(this.value)">'.
+			'<option selected value="">'.	esc_html__('Available backup files', 'ninjafirewall') .'</option>';
+		foreach( $files as $file ) {
+			if ( preg_match('`/(backup_(\d{10})_.+\.php)$`', $file, $match ) ) {
+
+				$date = ucfirst( date_i18n('F d, Y @ g:i A', $match[2] ) );
+				$size = ' ('. number_format_i18n( filesize( $file ) ) .' '.
+							esc_html__('bytes', 'ninjafirewall') .')';
+				$res .= '<option value="'. esc_attr( $match[1] ) .'" title="'. esc_attr( $file ) .'">'.
+							esc_html( $date . $size ) .'</option>';
 			}
 		}
 		$res .= '</select>';
-		$res .= '<p class="description">'. sprintf( __( "To restore NinjaFirewall's configuration to an earlier date, select it in the list and click '%s'.", 'ninjafirewall'), __('Save Firewall Options', 'ninjafirewall') ) . '</p>';
+		$res .= '<p class="description">'. sprintf(
+			esc_html__("To restore NinjaFirewall's configuration to an earlier date, select it in ".
+				"the list and click '%s'.", 'ninjafirewall'),
+			esc_html__('Save Firewall Options', 'ninjafirewall') ) . '</p>';
 
 	} else {
-		// No backup files yet:
-		$res = __('There are no backup available yet, check back later.', 'ninjafirewall');
+		// No backup files yet
+		$res = esc_html__('There are no backup available yet, check back later.', 'ninjafirewall');
 	}
 	return $res;
 

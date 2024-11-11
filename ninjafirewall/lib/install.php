@@ -140,7 +140,7 @@ function nfw_waf_sandbox() {
 		return true;
 	}
 
-	@session_write_close();
+	NinjaFirewall_session::close();
 
 	$sandbox_error = __('NinjaFirewall detected that the requested changes seemed to crash your blog. %s', 'ninjafirewall') ."\n".
 		__('Changes have been undone. You may need to modify your selection and try again.', 'ninjafirewall' );

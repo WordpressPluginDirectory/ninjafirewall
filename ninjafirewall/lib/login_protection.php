@@ -399,6 +399,8 @@ function nf_sub_loginprot_save() {
 		$bf_enable = (int) $_POST['nfw_options']['bf_enable'];
 	} else {
 		$bf_enable = 0;
+		// Clear session
+		NinjaFirewall_session::delete('nfw_bfd');
 	}
 
 	if (! empty( $_POST['nfw_options']['bf_type'] ) && preg_match( '/^[01]$/', $_POST['nfw_options']['bf_type'] ) ) {
@@ -511,18 +513,20 @@ function nf_sub_loginprot_save() {
 		@opcache_invalidate( NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php', true );
 	}
 
-	// Whitelist the admin:
-	$_SESSION['nfw_bfd'] = $bf_rand;
+	// Whitelist the admin
+	if ( $bf_enable ) {
+		NinjaFirewall_session::write( ['nfw_bfd' => $bf_rand ] );
+	}
 
-	// Delete cached files:
-	$path = NFW_LOG_DIR . '/nfwlog/cache/';
-	$glob = glob( $path . "bf_*" );
-	if ( is_array( $glob ) ) {
-		foreach( $glob as $file ) {
-			// Keep the current config:
-			if ( preg_match( '`/bf_conf.php`', $file ) ) { continue; }
-			unlink( $file );
+	// Delete cached files
+	$dir	= NFW_LOG_DIR .'/nfwlog/cache';
+	$list	= NinjaFirewall_helpers::nfw_glob( $dir, '^bf_', false );
+	foreach( $list as $file ) {
+		// Keep the current configuration file
+		if ( $file == 'bf_conf.php') {
+			continue;
 		}
+		unlink( "$dir/$file" );
 	}
 
 }

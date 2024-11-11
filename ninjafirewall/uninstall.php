@@ -21,18 +21,6 @@ if (! defined('WP_UNINSTALL_PLUGIN') ) {
 	exit;
 }
 
-if (! headers_sent() ) {
-	if (! function_exists('session_status') ) {
-		if (! session_id() ) {
-			session_start();
-		}
-	} else {
-		if (session_status() !== PHP_SESSION_ACTIVE) {
-			session_start();
-		}
-	}
-}
-
 nfw_uninstall();
 
 // ---------------------------------------------------------------------
@@ -43,11 +31,6 @@ function nfw_uninstall() {
 
 	if (! defined('NINJAFIREWALL_MU_PLUGIN') ) {
 		define('NINJAFIREWALL_MU_PLUGIN', '0-ninjafirewall.php');
-	}
-
-	// Unset the goodguy flag :
-	if ( isset( $_SESSION['nfw_goodguy'] ) ) {
-		unset( $_SESSION['nfw_goodguy'] );
 	}
 
 	if (! function_exists( 'get_home_path' ) ) {
@@ -69,14 +52,12 @@ function nfw_uninstall() {
 		$nfw_install = get_option('nfw_install');
 	}
 
-
 	// Clean-up wp-config.php:
 	if (! empty( $nfw_install['wp_config'] ) && file_exists( $nfw_install['wp_config'] ) && is_writable( $nfw_install['wp_config'] ) ) {
 		$wp_config_content = @file_get_contents( $nfw_install['wp_config'] );
 		$wp_config_content = preg_replace( '`\s?'. WP_CONFIG_BEGIN .'.+?'. WP_CONFIG_END .'[^\r\n]*\s?`s' , "\n", $wp_config_content);
 		@file_put_contents( $nfw_install['wp_config'], $wp_config_content, LOCK_EX );
 	}
-
 
 	// Clean-up .htaccess :
 	if (! empty($nfw_install['htaccess']) && file_exists($nfw_install['htaccess']) ) {
@@ -140,11 +121,6 @@ function nfw_uninstall() {
 		delete_site_option('nfw_install');
 		delete_site_option('nfw_tmp');
 		delete_site_option('nfw_checked');
-	}
-
-	// Clear session flag:
-	if ( isset( $_SESSION['nfw_goodguy'] ) ) {
-		unset( $_SESSION['nfw_goodguy'] );
 	}
 
 	// Remove fallback loader

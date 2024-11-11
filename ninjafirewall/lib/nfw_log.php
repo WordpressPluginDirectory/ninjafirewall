@@ -104,17 +104,4 @@ if ( defined('NFW_LOG_ENCODING') ) {
 	$encoding . "\n", FILE_APPEND | LOCK_EX);
 
 // ---------------------------------------------------------------------
-
-function nfw_anonymize_ip2( $ip ) {
-
-	$nfw_options = nfw_get_option( 'nfw_options' );
-
-	if (! empty( $nfw_options['anon_ip'] ) && filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-		return substr( $ip, 0, -3 ) .'xxx';
-	}
-
-	return $ip;
-}
-
-// ---------------------------------------------------------------------
 // EOF

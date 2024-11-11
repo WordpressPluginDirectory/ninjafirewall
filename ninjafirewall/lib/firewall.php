@@ -1,19 +1,15 @@
 <?php
-// +---------------------------------------------------------------------+
-// | NinjaFirewall (WP Edition)                                          |
-// |                                                                     |
-// | (c) NinTechNet - https://nintechnet.com/                            |
-// +---------------------------------------------------------------------+
-// | This program is free software: you can redistribute it and/or       |
-// | modify it under the terms of the GNU General Public License as      |
-// | published by the Free Software Foundation, either version 3 of      |
-// | the License, or (at your option) any later version.                 |
-// |                                                                     |
-// | This program is distributed in the hope that it will be useful,     |
-// | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
-// | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
-// | GNU General Public License for more details.                        |
-// +---------------------------------------------------------------------+ sa
+/*
+ +=====================================================================+
+ |    _   _ _        _       _____ _                        _ _        |
+ |   | \ | (_)_ __  (_) __ _|  ___(_)_ __ _____      ____ _| | |       |
+ |   |  \| | | '_ \ | |/ _` | |_  | | '__/ _ \ \ /\ / / _` | | |       |
+ |   | |\  | | | | || | (_| |  _| | | | |  __/\ V  V / (_| | | |       |
+ |   |_| \_|_|_| |_|/ |\__,_|_|   |_|_|  \___| \_/\_/ \__,_|_|_|       |
+ |                |__/                                                 |
+ |  (c) NinTechNet Limited ~ https://nintechnet.com/                   |
+ +=====================================================================+
+*/
 if ( strpos($_SERVER['SCRIPT_NAME'], '/nfwlog/') !== FALSE ||
 	strpos($_SERVER['SCRIPT_NAME'], '/ninjafirewall/') !== FALSE ) {
 	die('Forbidden');
@@ -69,6 +65,21 @@ if (! is_dir($nfw_['log_dir']) ) {
 		define( 'NFW_STATUS', 13 );
 		return;
 	}
+}
+
+/**
+ * Select whether we want to use PHP or NinjaFirewall sessions.
+ */
+if ( defined('NFWSESSION') ) {
+	if (! defined('NFWSESSION_DIR') ) {
+		/**
+		 * NFWSESSION_DIR can be defined in the .htninja.
+		 */
+		define('NFWSESSION_DIR', "{$nfw_['log_dir']}/session" );
+	}
+	require_once __DIR__ .'/class-nfw-session.php';
+} else {
+	require_once __DIR__ .'/class-php-session.php';
 }
 
 // Get/set PID
@@ -172,17 +183,18 @@ if (! empty($nfw_['nfw_options']['php_superglobals']) ) {
 	}
 }
 
-// We only start a session if users already have a PHP session
-// cookie because we don't need write access yet:
-$nfw_['session_name'] = ini_get('session.name');
-if ( isset( $_COOKIE[ $nfw_['session_name'] ] ) ) {
-	nfw_check_session();
+// We only start a session if users already have a session
+// cookie because we don't need write access yet
+$session_name = NinjaFirewall_session::name();
+if ( isset( $_COOKIE[ $session_name ] ) ) {
+	NinjaFirewall_session::start();
 }
 
-if (! empty($_SESSION['nfw_goodguy']) ) {
+if (! empty( NinjaFirewall_session::read('nfw_goodguy') ) ) {
+	// Look for Live Log AJAX request
+	if (! empty( NinjaFirewall_session::read('nfw_livelog') ) &&
+		isset( $_POST['livecls'] ) && isset( $_POST['lines'] ) ) {
 
-	// Look for Live Log AJAX request:
-	if (! empty($_SESSION['nfw_livelog']) &&  isset($_POST['livecls']) && isset($_POST['lines'])) {
 		include_once 'fw_livelog.php';
 		fw_livelog_show();
 	}
@@ -523,31 +535,6 @@ function nfw_is_https() {
 		define('NFW_IS_HTTPS', true);
 	} else {
 		define('NFW_IS_HTTPS', false);
-	}
-}
-
-// =====================================================================
-
-function nfw_check_session() {
-
-	global $nfw_;
-
-	if (! function_exists('session_status') ) {
-		if (session_id() ) return;
-	} else {
-		if (session_status() === PHP_SESSION_ACTIVE) return;
-	}
-
-	// Prepare session:
-	@ini_set('session.cookie_httponly', 1);
-	@ini_set('session.use_only_cookies', 1);
-	if ( defined('NFW_IS_HTTPS') && NFW_IS_HTTPS == true ) {
-		@ini_set('session.cookie_secure', 1);
-	}
-
-	if (! headers_sent() ) {
-		session_start();
-		$nfw_['session_id'] = 1;
 	}
 }
 
@@ -946,10 +933,11 @@ function nfw_matching( $where, $key, $nfw_rules, $rules, $subid, $id, $nfw_optio
 	}
 
 	// Check if the user has the required capability, if any
-	if ( isset( $rules['cpb'] ) && isset( $_SESSION['allcaps'] ) ) {
+	$allcaps = NinjaFirewall_session::read('allcaps');
+	if ( isset( $rules['cpb'] ) && ! empty( $allcaps ) ) {
 		$caps = explode( '|', $rules['cpb'] );
 		foreach( $caps as $cap ) {
-			if (! empty( $_SESSION['allcaps'][$cap] ) ) {
+			if ( isset( $allcaps[$cap] ) ) {
 				return 0;
 			}
 		}
@@ -1440,10 +1428,7 @@ function nfw_block() {
 
 	$tmp = str_replace('%%REM_ADDRESS%%', NFW_REMOTE_ADDR, $tmp );
 
-	if ( isset( $nfw_['session_id'] ) ) {
-		$_SESSION = [];
-		session_destroy();
-	}
+	NinjaFirewall_session::delete();
 
 	if (! headers_sent() ) {
 		header("HTTP/1.1 {$http_codes[$nfw_['nfw_options']['ret_code']]}" );
@@ -1741,10 +1726,7 @@ function nfw_is_bot( $block = '') {
 			header('Expires: 0');
 			$nfw_['nfw_options']['ret_code'] = '404';
 			nfw_log( $block, 'bot detection is enabled', 1, 0 );
-			if ( isset( $nfw_['session_id'] ) ) {
-				$_SESSION = [];
-				session_destroy();
-			}
+			NinjaFirewall_session::delete();
 			exit('404 Not Found');
 		}
 
@@ -1765,11 +1747,12 @@ function nfw_check_auth( $auth_name, $auth_pass, $auth_msgtxt, $bf_rand, $b64, $
 		exit;
 	}
 
-	nfw_check_session();
+	NinjaFirewall_session::start();
 
 	global $nfw_;
 
-	if ( isset($_SESSION['nfw_bfd']) && $_SESSION['nfw_bfd'] == $bf_rand ) {
+	$nfw_bfd = NinjaFirewall_session::read('nfw_bfd');
+	if ( isset( $nfw_bfd ) && $nfw_bfd == $bf_rand ) {
 		return;
 	}
 
@@ -1777,18 +1760,19 @@ function nfw_check_auth( $auth_name, $auth_pass, $auth_msgtxt, $bf_rand, $b64, $
 		// Password protection:
 		if (! empty($_REQUEST['u']) && ! empty($_REQUEST['p']) ) {
 			if ( $_REQUEST['u'] === $auth_name && sha1($_REQUEST['p']) === $auth_pass ) {
-				$_SESSION['nfw_bfd'] = $bf_rand;
+				NinjaFirewall_session::write( ['nfw_bfd' => $bf_rand ] );
 				return;
 			}
 		}
 	} else {
-		// Make sure the GD extension is loaded:
+		// Make sure the GD extension is loaded
 		if ( function_exists( 'gd_info' ) ) {
-			// Captcha protection:
-			if (! empty( $_REQUEST['c'] ) && isset( $_SESSION['nfw_bfd_c'] ) ) {
-				if ( $_SESSION['nfw_bfd_c'] == strtolower( $_REQUEST['c'] ) ) {
-					$_SESSION['nfw_bfd'] = $bf_rand;
-					unset( $_SESSION['nfw_bfd_c'] );
+			// Captcha protection
+			$nfw_bfd_c = NinjaFirewall_session::read('nfw_bfd_c');
+			if (! empty( $_REQUEST['c'] ) && isset( $nfw_bfd_c ) ) {
+				if ( $nfw_bfd_c == strtolower( $_REQUEST['c'] ) ) {
+					NinjaFirewall_session::write( ['nfw_bfd' => $bf_rand ] );
+					NinjaFirewall_session::delete('nfw_bfd_c');
 					return;
 				}
 			}
@@ -1798,10 +1782,7 @@ function nfw_check_auth( $auth_name, $auth_pass, $auth_msgtxt, $bf_rand, $b64, $
 		}
 	}
 
-	if ( isset( $nfw_['session_id'] ) ) {
-		$_SESSION = [];
-		session_destroy();
-	}
+	NinjaFirewall_session::delete();
 
 	if ( $b64 ) { $auth_msgtxt = base64_decode( $auth_msgtxt ); }
 
@@ -1844,7 +1825,7 @@ function nfw_get_captcha() {
 		return false;
 	}
 
-	nfw_check_session();
+	NinjaFirewall_session::start();
 
 	$characters  = 'AaBbCcDdEeFfGgHhiIJjKkLMmNnPpRrSsTtUuVvWwXxYyZz123456789';
 	$captcha = '';
@@ -1874,7 +1855,7 @@ function nfw_get_captcha() {
 
 	$res = '<img src="data:image/png;base64,'. base64_encode( $img_content ) .'" />';
 
-	$_SESSION['nfw_bfd_c'] = strtolower( $captcha );
+	NinjaFirewall_session::write( ['nfw_bfd_c' => strtolower( $captcha ) ] );
 
 	return $res;
 }
