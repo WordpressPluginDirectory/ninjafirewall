@@ -22,12 +22,20 @@ if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
 // is loaded by WordPress.
 // ---------------------------------------------------------------------
 
-// Plugin's email signature
-define( 'NF_PG_SIGNATURE', 'NinjaFirewall (WP Edition) - https://nintechnet.com/' ."\n".
-	__('Support forum:', 'ninjafirewall') . ' http://wordpress.org/support/plugin/ninjafirewall' );
-define( 'NF_PG_MORESEC', sprintf(
-		__('Need more security? Check out our supercharged NinjaFirewall (WP+ Edition): %s', 'ninjafirewall'),
-		'https://nintechnet.com/ninjafirewall/wp-edition/?comparison' ) );
 
+/**
+ * Since WP 6.7, translation loading must not be triggered too early.
+ */
+add_action('init', 'ninjafirewall_wp_i18n_custom');
+function ninjafirewall_wp_i18n_custom() {
+
+	// Plugin's email signature
+	define( 'NF_PG_SIGNATURE', 'NinjaFirewall (WP Edition) - https://nintechnet.com/' ."\n".
+		__('Support forum:', 'ninjafirewall') . ' http://wordpress.org/support/plugin/ninjafirewall' );
+	define( 'NF_PG_MORESEC', sprintf(
+			__('Need more security? Check out our supercharged NinjaFirewall (WP+ Edition): %s', 'ninjafirewall'),
+			'https://nintechnet.com/ninjafirewall/wp-edition/?comparison' ) );
+
+}
 // ---------------------------------------------------------------------
 // EOF

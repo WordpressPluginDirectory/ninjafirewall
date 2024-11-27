@@ -3,7 +3,7 @@ Contributors: nintechnet, bruandet
 Tags: security, firewall, malware, virus, protection
 Requires at least: 4.9
 Tested up to: 6.7
-Stable tag: 4.7
+Stable tag: 4.7.1
 Requires PHP: 7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -207,6 +207,9 @@ WordPress Sicherheit Plugin.
 == Changelog ==
 
 Need more security? Take the time to explore our supercharged Premium edition: [NinjaFirewall WP+ Edition](https://nintechnet.com/ninjafirewall/wp-edition/?comparison)
+
+= 4.7.1 =
+* Fixed a potential "Function _load_textdomain_just_in_time was called incorrectly" PHP notice that can occurred with WordPress >=6.7.
 
 = 4.7 =
 

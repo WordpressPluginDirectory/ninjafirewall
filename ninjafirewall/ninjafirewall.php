@@ -3,7 +3,7 @@
 Plugin Name: NinjaFirewall (WP Edition)
 Plugin URI: https://nintechnet.com/
 Description: A true Web Application Firewall to protect and secure WordPress.
-Version: 4.7
+Version: 4.7.1
 Author: The Ninja Technologies Network
 Author URI: https://nintechnet.com/
 License: GPLv3 or later
@@ -11,7 +11,7 @@ Network: true
 Text Domain: ninjafirewall
 Domain Path: /languages
 */
-define('NFW_ENGINE_VERSION', '4.7');
+define('NFW_ENGINE_VERSION', '4.7.1');
 /*
  +=====================================================================+
  |    _   _ _        _       _____ _                        _ _        |
@@ -49,40 +49,45 @@ add_action('plugins_loaded','nfw_load_txtdomain');
 
 /* ------------------------------------------------------------------ */
 
-$null = __('A true Web Application Firewall to protect and secure WordPress.', 'ninjafirewall');
-define('NFW_NULL_BYTE', 2);
-define('NFW_SCAN_BOTS', 531);
-define('NFW_ASCII_CTRL', 500);
-define('NFW_DOC_ROOT', 510);
-define('NFW_WRAPPERS', 520);
-define('NFW_OBJECTS', 525);
-define('NFW_LOOPBACK', 540);
-define( 'NFW_DEFAULT_MSG', '<br /><br /><br /><br /><center>' .
-		sprintf( __('Sorry %s, your request cannot be processed.', 'ninjafirewall'), '<b>%%REM_ADDRESS%%</b>') .
-		'<br />' . __('For security reasons, it was blocked and logged.', 'ninjafirewall') .
-		'<br /><br />%%NINJA_LOGO%%<br /><br />' .
-			__('If you believe this was an error please contact the<br />webmaster and enclose the following incident ID:', 'ninjafirewall') .
-		'<br /><br />[ <b>#%%NUM_INCIDENT%%</b> ]</center>'
-);
-$err_fw = [
-	1	=> __('Cannot find WordPress configuration file', 'ninjafirewall'),
-	2	=>	__('Cannot read WordPress configuration file', 'ninjafirewall'),
-	3	=>	__('Cannot retrieve WordPress database credentials', 'ninjafirewall'),
-	4	=>	__('Cannot connect to WordPress database', 'ninjafirewall'),
-	5	=>	__('Cannot retrieve user options from database (#2)', 'ninjafirewall'),
-	6	=>	__('Cannot retrieve user options from database (#3)', 'ninjafirewall'),
-	7	=>	__('Cannot retrieve user rules from database (#2)', 'ninjafirewall'),
-	8	=>	__('Cannot retrieve user rules from database (#3)', 'ninjafirewall'),
-	9	=>	__('The firewall has been disabled from the <a href="admin.php?page=nfsubopt">administration console</a>', 'ninjafirewall'),
-	10	=> __('Unable to communicate with the firewall. Please check your settings', 'ninjafirewall'),
-	11	=>	__('Cannot retrieve user options from database (#1)', 'ninjafirewall'),
-	12	=>	__('Cannot retrieve user rules from database (#1)', 'ninjafirewall'),
-	13 => sprintf( __("The firewall cannot access its log and cache folders. If you changed the name of WordPress %s or %s folders, you must define NinjaFirewall's built-in %s constant (see %s for more info)", 'ninjafirewall'), '<code>/wp-content/</code>', '<code>/plugins/</code>', '<code>NFW_LOG_DIR</code>', "<a href='https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/' target='_blank'>Path to NinjaFirewall's log and cache directory</a>"),
-	14 => __('The PHP msqli extension is missing or not loaded.', 'ninjafirewall'),
-	15	=>	__('Cannot retrieve user options from database (#4)', 'ninjafirewall'),
-	16	=>	__('Cannot retrieve user rules from database (#4)', 'ninjafirewall')
-
-];
+/**
+ * Since WP 6.7, translation loading must not be triggered too early.
+ */
+add_action('init', 'ninjafirewall_wp_i18n_constants');
+function ninjafirewall_wp_i18n_constants() {
+	$null = __('A true Web Application Firewall to protect and secure WordPress.', 'ninjafirewall');
+	define('NFW_NULL_BYTE', 2);
+	define('NFW_SCAN_BOTS', 531);
+	define('NFW_ASCII_CTRL', 500);
+	define('NFW_DOC_ROOT', 510);
+	define('NFW_WRAPPERS', 520);
+	define('NFW_OBJECTS', 525);
+	define('NFW_LOOPBACK', 540);
+	define( 'NFW_DEFAULT_MSG', '<br /><br /><br /><br /><center>' .
+			sprintf( __('Sorry %s, your request cannot be processed.', 'ninjafirewall'), '<b>%%REM_ADDRESS%%</b>') .
+			'<br />' . __('For security reasons, it was blocked and logged.', 'ninjafirewall') .
+			'<br /><br />%%NINJA_LOGO%%<br /><br />' .
+				__('If you believe this was an error please contact the<br />webmaster and enclose the following incident ID:', 'ninjafirewall') .
+			'<br /><br />[ <b>#%%NUM_INCIDENT%%</b> ]</center>'
+	);
+	$err_fw = [
+		1	=> __('Cannot find WordPress configuration file', 'ninjafirewall'),
+		2	=>	__('Cannot read WordPress configuration file', 'ninjafirewall'),
+		3	=>	__('Cannot retrieve WordPress database credentials', 'ninjafirewall'),
+		4	=>	__('Cannot connect to WordPress database', 'ninjafirewall'),
+		5	=>	__('Cannot retrieve user options from database (#2)', 'ninjafirewall'),
+		6	=>	__('Cannot retrieve user options from database (#3)', 'ninjafirewall'),
+		7	=>	__('Cannot retrieve user rules from database (#2)', 'ninjafirewall'),
+		8	=>	__('Cannot retrieve user rules from database (#3)', 'ninjafirewall'),
+		9	=>	__('The firewall has been disabled from the <a href="admin.php?page=nfsubopt">administration console</a>', 'ninjafirewall'),
+		10	=> __('Unable to communicate with the firewall. Please check your settings', 'ninjafirewall'),
+		11	=>	__('Cannot retrieve user options from database (#1)', 'ninjafirewall'),
+		12	=>	__('Cannot retrieve user rules from database (#1)', 'ninjafirewall'),
+		13 => sprintf( __("The firewall cannot access its log and cache folders. If you changed the name of WordPress %s or %s folders, you must define NinjaFirewall's built-in %s constant (see %s for more info)", 'ninjafirewall'), '<code>/wp-content/</code>', '<code>/plugins/</code>', '<code>NFW_LOG_DIR</code>', "<a href='https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/' target='_blank'>Path to NinjaFirewall's log and cache directory</a>"),
+		14 => __('The PHP msqli extension is missing or not loaded.', 'ninjafirewall'),
+		15	=>	__('Cannot retrieve user options from database (#4)', 'ninjafirewall'),
+		16	=>	__('Cannot retrieve user rules from database (#4)', 'ninjafirewall')
+	];
+}
 
 if (! defined('NFW_LOG_DIR') ) {
 	define('NFW_LOG_DIR', WP_CONTENT_DIR);
