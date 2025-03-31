@@ -105,13 +105,13 @@ function nfw_sodium_decrypt( $hex ) {
 
 	if ( $which_sodium == 'php') {
 		// PHP native functions
-		$key			= sodium_crypto_generichash( AUTH_KEY, null, SODIUM_CRYPTO_SECRETBOX_KEYBYTES );
+		$key			= sodium_crypto_generichash( AUTH_KEY, '', SODIUM_CRYPTO_SECRETBOX_KEYBYTES );
 		$decrypted	= sodium_crypto_secretbox_open( $ciphertext, $nonce, $key );
 
 	} else {
 		// WP sodium libraries
 		require ABSPATH . WPINC .'/sodium_compat/autoload.php';
-		$key			= \Sodium\crypto_generichash( AUTH_KEY, null, SODIUM_CRYPTO_SECRETBOX_KEYBYTES );
+		$key			= \Sodium\crypto_generichash( AUTH_KEY, '', SODIUM_CRYPTO_SECRETBOX_KEYBYTES );
 		$decrypted	= \Sodium\crypto_secretbox_open( $ciphertext, $nonce, $key );
 	}
 
@@ -171,6 +171,10 @@ function nfw_sodium_decrypt( $hex ) {
 		$message.= __('Email address:', 'ninjafirewall') .' '. "{$data[0]}\n";
 		$message.= __('User IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n";
 		$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
+		/**
+		 * We don't use NinjaFirewall_mail::send() because the email must
+		 * be sent to the corresponding user, not the admin.
+		 */
 		wp_mail( $data[0], $subject, $message );
 	}
 

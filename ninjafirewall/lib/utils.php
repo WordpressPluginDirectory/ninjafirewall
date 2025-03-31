@@ -1,20 +1,14 @@
 <?php
 /*
- +---------------------------------------------------------------------+
- | NinjaFirewall (WP Edition)                                          |
- |                                                                     |
- | (c) NinTechNet - https://nintechnet.com/                            |
- +---------------------------------------------------------------------+
- | This program is free software: you can redistribute it and/or       |
- | modify it under the terms of the GNU General Public License as      |
- | published by the Free Software Foundation, either version 3 of      |
- | the License, or (at your option) any later version.                 |
- |                                                                     |
- | This program is distributed in the hope that it will be useful,     |
- | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
- | GNU General Public License for more details.                        |
- +---------------------------------------------------------------------+
+ +=====================================================================+
+ |    _   _ _        _       _____ _                        _ _        |
+ |   | \ | (_)_ __  (_) __ _|  ___(_)_ __ _____      ____ _| | |       |
+ |   |  \| | | '_ \ | |/ _` | |_  | | '__/ _ \ \ /\ / / _` | | |       |
+ |   | |\  | | | | || | (_| |  _| | | | |  __/\ V  V / (_| | | |       |
+ |   |_| \_|_|_| |_|/ |\__,_|_|   |_|_|  \___| \_/\_/ \__,_|_|_|       |
+ |                |__/                                                 |
+ |  (c) NinTechNet Limited ~ https://nintechnet.com/                   |
+ +=====================================================================+
 */
 
 if (! defined('NFW_ENGINE_VERSION') ) { die('Forbidden'); }
@@ -136,8 +130,11 @@ function nf_wp_insert_post_empty_content( $maybe_empty, $postarr ) {
 		return false;
 	}
 
-	// We only care about page and post post_type:
-	if (! empty( $postarr['post_type'] ) && ( $postarr['post_type'] == 'post' || $postarr['post_type'] == 'page') ) {
+	/**
+	 * We only care about page and post post_type.
+	 */
+	if (! empty( $postarr['post_type'] ) &&
+		( $postarr['post_type'] == 'post' || $postarr['post_type'] == 'page') ) {
 
 		if (! isset( $postarr['ID'] ) ) {
 			$id = 0;
@@ -145,22 +142,32 @@ function nf_wp_insert_post_empty_content( $maybe_empty, $postarr ) {
 			$id = $postarr['ID'];
 		}
 
-		// Ignore post if it isn't either already published or set to be published immediately:
-		if ( get_post_status( $id ) != 'publish' && ( empty( $postarr['post_status'] ) || $postarr['post_status'] != 'publish') ) {
+		/**
+		 * Ignore post if it isn't either already published or set to be published immediately.
+		 */
+		if ( get_post_status( $id ) != 'publish' &&
+			( empty( $postarr['post_status'] ) || $postarr['post_status'] != 'publish') ) {
+
 			return false;
 		}
 
-		// Ignore empty post whose ID is 0, including issue with the Quick Draft widget (#2140)
+		/**
+		 * Ignore empty post whose ID is 0, including issue with the Quick Draft widget (#2140).
+		 */
 		if ( empty( $id ) && empty( $postarr['post_content'] ) ) {
 			return false;
 		}
 
 		$old_post = get_post( $id );
-		if ( $old_post->post_title == $postarr['post_title'] &&  $old_post->post_content == $postarr['post_content'] ) {
+		if ( $old_post->post_title == $postarr['post_title'] &&
+			$old_post->post_content == $postarr['post_content'] ) {
+
 			return false;
 		}
 
-		// We must use meta capability (edit_post/edit_page), not capability (edit_postS/edit_pageS).
+		/**
+		 * We must use meta capability (edit_post/edit_page), not capability (edit_postS/edit_pageS).
+		 */
 		$edit_post = "edit_{$postarr['post_type']}";
 		if ( current_user_can( $edit_post, $id ) ) {
 			return false;
@@ -173,24 +180,32 @@ function nf_wp_insert_post_empty_content( $maybe_empty, $postarr ) {
 		}
 		if (! empty( $postarr['post_content'] ) ) {
 			if ( strlen( $postarr['post_content'] ) > 100 ) {
-				$postarr['post_content'] = mb_substr( $postarr['post_content'], 0, 100, 'utf-8') . '...';
+				$postarr['post_content'] = mb_substr( $postarr['post_content'], 0, 100, 'utf-8') .'...';
 			}
 			$post_content = $postarr['post_content'];
 		} else {
 			$post_content = __('N/A', 'ninjafirewall');
 		}
 
-		// Page or post creation:
+		/**
+		 * Page or post creation.
+		 */
 		if ( empty( $id ) ) {
 			/* Translators : "page" or "post" type */
 			$action = sprintf( __('Attempt to create a new %s', 'ninjafirewall'), $postarr['post_type'] );
-		// Edition:
+		/**
+		 * Page or post edition.
+		 */
 		} else {
 			/* Translators : "page" or "post" type and its numerical ID */
-			$action = sprintf( __('Attempt to edit a published %s (ID: %s)', 'ninjafirewall'), $postarr['post_type'], $id );
+			$action = sprintf(
+				__('Attempt to edit a published %s (ID: %s)', 'ninjafirewall'), $postarr['post_type'], $id
+			);
 		}
 
-		// Check if user is authenticated
+		/**
+		 * Check if the user is authenticated.
+		 */
 		$current_user = wp_get_current_user();
 		if ( empty( $current_user->user_login ) ) {
 			$user = __('Unauthenticated user', 'ninjafirewall');
@@ -201,34 +216,30 @@ function nf_wp_insert_post_empty_content( $maybe_empty, $postarr ) {
 		$subject = __('Blocked post/page edition attempt', 'ninjafirewall');
 		nfw_log2('WordPress: ' . $subject, "post_content: $post_content", 3, 0);
 
-		// Alert the admin:
-		$subject = '[NinjaFirewall] ' . $subject;
-		$message = __('NinjaFirewall has blocked an attempt to edit/create a post by a user who doesn\'t have the right capabilities:', 'ninjafirewall') . "\n\n";
-		$message.= __('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-		$message.= __('Username:', 'ninjafirewall') .' '. "$user\n";
-		$message.= __('Action:', 'ninjafirewall') .' '. "$action\n";
-		$message.= "post_title: $post_title\n";
-		$message.= "post_content: $post_content\n";
-		$message.= __('User IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n";
-		$message.= 'SCRIPT_FILENAME: ' . $_SERVER['SCRIPT_FILENAME'] . "\n";
-		$message.= 'REQUEST_URI: ' . $_SERVER['REQUEST_URI'] . "\n";
-		$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
-
-		// Attach PHP backtrace
+		/**
+		 * Backtrace.
+		 */
 		$return  = nfw_debug_backtrace( $nfw_options );
-		$message.= $return['message'];
-		$message.= __('This protection (and notification) can be turned off from NinjaFirewall "Firewall Policies" page.', 'ninjafirewall') . "\n\n";
-		$message.= NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC ."\n";
-		if ( empty( $return['nftmpfname'] ) ) {
-			nfw_mail( $subject, $message, 'unsubscribe');
-
+		if (! empty( $return['nftmpfname'] ) ) {
+			$attachment = $return['nftmpfname'];
 		} else {
-			// Attach backtrace and delete temp file:
-			nfw_mail( $subject, $message, 'unsubscribe', $headers = '', $return['nftmpfname'] );
-			unlink( $return['nftmpfname'] );
+			$attachment = [];
 		}
 
-		// Block it
+		/**
+		 * Email notification.
+		 */
+		$subject = [];
+		$content = [ home_url('/'), $user, $action, $post_title, $post_content,
+						NFW_REMOTE_ADDR, $_SERVER['SCRIPT_FILENAME'], $_SERVER['REQUEST_URI'],
+						date_i18n('F j, Y @ H:i:s T'), $return['message']
+		];
+		NinjaFirewall_mail::send('perm_edit', $subject, $content, '', $attachment, 1 );
+
+
+		/**
+		 * Block the request.
+		 */
 		NinjaFirewall_session::delete();
 		wp_die(
 			'NinjaFirewall: '. __('You are not allowed to perform this task.', 'ninjafirewall'),
@@ -252,14 +263,17 @@ function nf_pre_delete_post( $delete, $post, $force_delete ) {
 
 		return null;
 	}
-
 	if (! isset( $post->post_type ) || ! isset( $post->post_status ) || empty( $post->ID ) ) {
 		return null;
 	}
-	if ( ( $post->post_type == 'post' || $post->post_type == 'page') && $post->post_status == 'publish') {
+	if ( ( $post->post_type == 'post' ||
+		$post->post_type == 'page') && $post->post_status == 'publish') {
+
 		if (! current_user_can( "delete_{$post->post_type}", $post->ID ) ) {
 
-			// Check if user is authenticated
+			/**
+			 * Check if user is authenticated.
+			 */
 			$current_user = wp_get_current_user();
 			if ( empty( $current_user->user_login ) ) {
 				$user = __('Unauthenticated user', 'ninjafirewall');
@@ -276,33 +290,29 @@ function nf_pre_delete_post( $delete, $post, $force_delete ) {
 			$subject = __('Blocked post/page deletion attempt', 'ninjafirewall');
 			nfw_log2('WordPress: ' . $subject, "post ID: {$post->ID}", 3, 0);
 
-			// Alert the admin:
-			$subject = '[NinjaFirewall] ' . $subject;
-			$message = __('NinjaFirewall has blocked an attempt to delete a post by a user who doesn\'t have the right capabilities:', 'ninjafirewall') . "\n\n";
-			$message.= __('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-			$message.= __('Username:', 'ninjafirewall') .' '. "$user\n";
-			$message.= "post ID: {$post->ID}\n";
-			$message.= "post_title: $post_title\n";
-			$message.= __('User IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n";
-			$message.= 'SCRIPT_FILENAME: ' . $_SERVER['SCRIPT_FILENAME'] . "\n";
-			$message.= 'REQUEST_URI: ' . $_SERVER['REQUEST_URI'] . "\n";
-			$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
-
-			// Attach PHP backtrace
+			/**
+			 * Backtrace.
+			 */
 			$return  = nfw_debug_backtrace( $nfw_options );
-			$message.= $return['message'];
-			$message.= __('This protection (and notification) can be turned off from NinjaFirewall "Firewall Policies" page.', 'ninjafirewall') . "\n\n";
-			$message.= NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC ."\n";
-			if ( empty( $return['nftmpfname'] ) ) {
-				nfw_mail( $subject, $message, 'unsubscribe');
-
+			if (! empty( $return['nftmpfname'] ) ) {
+				$attachment = $return['nftmpfname'];
 			} else {
-				// Attach backtrace and delete temp file:
-				nfw_mail( $subject, $message, 'unsubscribe', $headers = '', $return['nftmpfname'] );
-				unlink( $return['nftmpfname'] );
+				$attachment = [];
 			}
 
-			// Block it
+			/**
+			 * Email notification.
+			 */
+			$subject = [];
+			$content = [ home_url('/'), $user, $post->ID, $post_title,
+							NFW_REMOTE_ADDR, $_SERVER['SCRIPT_FILENAME'], $_SERVER['REQUEST_URI'],
+							date_i18n('F j, Y @ H:i:s T'), $return['message']
+			];
+			NinjaFirewall_mail::send('perm_delete', $subject, $content, '', $attachment, 1 );
+
+			/**
+			 * Block the request.
+			 */
 			NinjaFirewall_session::delete();
 			wp_die(
 				'NinjaFirewall: '. __('You are not allowed to perform this task.', 'ninjafirewall'),
@@ -358,7 +368,7 @@ function nfw_verbosity( $nfw_options ) {
 	return 2;
 }
 
-// --------------------------------------------------------------------- 2023-07-26
+// ---------------------------------------------------------------------
 // Prevent account deletion.
 
 function nfw_delete_user( $user_id ) {
@@ -374,38 +384,35 @@ function nfw_delete_user( $user_id ) {
 		return;
 	}
 
+	/**
+	 * Write to log.
+	 */
 	$subject = __('Blocked user deletion attempt', 'ninjafirewall');
-
 	nfw_log2('WordPress: ' . $subject, "User: {$user_data->user_login}, ID: $user_id", 3, 0 );
 
-	// Alert the admin:
-	$subject = '[NinjaFirewall] ' . $subject;
-	$message = __('NinjaFirewall has blocked an attempt to delete a user account by a user who '.
-					'doesn\'t have the right capabilities:', 'ninjafirewall') . "\n\n";
-	$message.= __('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-	$message.= __('User to delete:', 'ninjafirewall') .' '.
-					"{$user_data->user_login} (ID: $user_id)\n";
-	$message.= __('User IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n";
-	$message.= 'SCRIPT_FILENAME: ' . $_SERVER['SCRIPT_FILENAME'] . "\n";
-	$message.= 'REQUEST_URI: ' . $_SERVER['REQUEST_URI'] . "\n";
-	$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
-
-	// Attach PHP backtrace
+	/**
+	 * Backtrace.
+	 */
 	$return  = nfw_debug_backtrace( $nfw_options );
-	$message.= $return['message'];
-	$message.= __('This protection (and notification) can be turned off from NinjaFirewall '.
-					'"Firewall Policies" page.', 'ninjafirewall') . "\n\n";
-	$message.= NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC ."\n";
-	if ( empty( $return['nftmpfname'] ) ) {
-		nfw_mail( $subject, $message, 'unsubscribe');
-
+	if (! empty( $return['nftmpfname'] ) ) {
+		$attachment = $return['nftmpfname'];
 	} else {
-		// Attach backtrace and delete temp file:
-		nfw_mail( $subject, $message, 'unsubscribe', $headers = '', $return['nftmpfname'] );
-		unlink( $return['nftmpfname'] );
+		$attachment = [];
 	}
 
-	// Block it
+	/**
+	 * Email notification.
+	 */
+	$subject = [];
+	$content = [ home_url('/'), "{$user_data->user_login} (ID: $user_id)",
+					NFW_REMOTE_ADDR, $_SERVER['SCRIPT_FILENAME'], $_SERVER['REQUEST_URI'],
+					date_i18n('F j, Y @ H:i:s T') , $return['message']
+	];
+	NinjaFirewall_mail::send('delete_user', $subject, $content, '', $attachment, 1 );
+
+	/**
+	 * Block the request.
+	 */
 	NinjaFirewall_session::delete();
 	wp_die(
 		'NinjaFirewall: '. __('You are not allowed to perform this task.', 'ninjafirewall'),
@@ -423,51 +430,52 @@ function nfw_account_creation( $user_login ) {
 
 	$nfw_options = nfw_get_option('nfw_options');
 
-	// We must allow the request if the username exists too, otherwise we'll
-	// block them from using the "Lost password" feature:
+	/**
+	 * We must allow the request if the username exists too, otherwise we'll
+	 * block them from using the "Lost password" feature.
+	 */
 	if ( current_user_can('create_users') || empty( $nfw_options['disallow_creation'] ) ||
 		empty( $nfw_options['enabled'] ) || username_exists( $user_login ) ) {
-
-		// Do nothing:
+		/**
+		 * Do nothing.
+		 */
 		return $user_login;
 	}
 
+	/**
+	 * Write to log.
+	 */
 	$subject = __('Blocked user account creation', 'ninjafirewall');
 	nfw_log2( "WordPress: {$subject}", "Username: {$user_login}", 3, 0);
 
-	// Alert the admin:
-	$subject = '[NinjaFirewall] ' . $subject;
-	$message = __('NinjaFirewall has blocked an attempt to create a user account:', 'ninjafirewall') . "\n\n";
-	// Show current blog, not main site (multisite):
-	$message.= __('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-	$message.= __('Username:', 'ninjafirewall') ." {$user_login} (blocked)\n";
-	$message.= __('User IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n";
-	$message.= 'SCRIPT_FILENAME: ' . $_SERVER['SCRIPT_FILENAME'] . "\n";
-	$message.= 'REQUEST_URI: ' . $_SERVER['REQUEST_URI'] . "\n";
-	$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
-
-	// Attach PHP backtrace
+	/**
+	 * Backtrace.
+	 */
 	$return  = nfw_debug_backtrace( $nfw_options );
-	$message.= $return['message'];
-	$message.= NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
-
-	if ( empty( $return['nftmpfname'] ) ) {
-		nfw_mail( $subject, $message, 'unsubscribe');
-
+	if (! empty( $return['nftmpfname'] ) ) {
+		$attachment = $return['nftmpfname'];
 	} else {
-		// Attach backtrace and delete temp file:
-		nfw_mail( $subject, $message, 'unsubscribe', $headers = '', $return['nftmpfname'] );
-		unlink( $return['nftmpfname'] );
+		$attachment = [];
 	}
 
-	// Block it
+	/**
+	 * Email notification.
+	 */
+	$subject = [];
+	$content = [ home_url('/'), $user_login, NFW_REMOTE_ADDR, $_SERVER['SCRIPT_FILENAME'],
+					$_SERVER['REQUEST_URI'], date_i18n('F j, Y @ H:i:s T') , $return['message']
+	];
+	NinjaFirewall_mail::send('create_user', $subject, $content, '', $attachment, 1 );
+
+	/**
+	 * Block the request.
+	 */
 	NinjaFirewall_session::delete();
 	wp_die(
 		'NinjaFirewall: '. __('You are not allowed to perform this task.', 'ninjafirewall'),
 		'NinjaFirewall: '. __('You are not allowed to perform this task.', 'ninjafirewall'),
 		$nfw_options['ret_code']
 	);
-
 }
 
 add_filter('pre_user_login' , 'nfw_account_creation');
@@ -720,23 +728,32 @@ function nfw_log_error( $message ) {
 // ---------------------------------------------------------------------
 
 function nfw_select_ip() {
-	// Ensure we have a proper and single IP (a user may use the .htninja file
-	// to redirect HTTP_X_FORWARDED_FOR, which may contain more than one IP,
-	// to REMOTE_ADDR):
+
+	/**
+	 * Check which IP we are supposed to use (set up by the user from
+	 * the Access Control > Source IP page (WP+ Edition only).
+	 *
+	 * Note: Although this was already done by the firewall,
+	 * we check it here again in the case the firewall is not loaded.
+	 */
+
+	/**
+	 * Some command line cron jobs may return an `Undefined array key "REMOTE_ADDR"` warning.
+	 */
 	if (! isset( $_SERVER['REMOTE_ADDR'] ) ) {
 		$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
 	}
-	if (strpos($_SERVER['REMOTE_ADDR'], ',') !== false) {
-		$nfw_match = array_map('trim', @explode(',', $_SERVER['REMOTE_ADDR']));
-		foreach($nfw_match as $nfw_m) {
-			if ( filter_var($nfw_m, FILTER_VALIDATE_IP) )  {
-				define('NFW_REMOTE_ADDR', $nfw_m);
+	if ( strpos( $_SERVER['REMOTE_ADDR'], ',') !== false ) {
+		$nfw_match = array_map('trim', @explode(',', $_SERVER['REMOTE_ADDR'] ) );
+		foreach( $nfw_match as $nfw_m ) {
+			if ( filter_var( $nfw_m, FILTER_VALIDATE_IP ) )  {
+				define('NFW_REMOTE_ADDR', $nfw_m );
 				break;
 			}
 		}
 	}
 	if (! defined('NFW_REMOTE_ADDR') ) {
-		define('NFW_REMOTE_ADDR', htmlspecialchars($_SERVER['REMOTE_ADDR']) );
+		define('NFW_REMOTE_ADDR', htmlspecialchars( $_SERVER['REMOTE_ADDR'] ) );
 	}
 }
 
@@ -817,20 +834,18 @@ function nfw_send_loginemail( $user_login, $whoami ) {
 
 	$nfw_options = nfw_get_option('nfw_options');
 
-	$subject = '[NinjaFirewall] ' . __('Alert: WordPress console login', 'ninjafirewall');
-	// Show current blog, not main site (multisite):
-	$url = __('-Blog:', 'ninjafirewall') .' '. home_url('/') . "\n\n";
 	if (! empty( $whoami ) ) {
 		$whoami = " ($whoami)";
 	}
-	$message = __('Someone just logged in to your WordPress admin console:', 'ninjafirewall') . "\n\n".
-				__('-User:', 'ninjafirewall') .' '. $user_login . $whoami . "\n" .
-				__('-IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n" .
-				__('-Date:', 'ninjafirewall') .' '. ucfirst(date_i18n('F j, Y @ H:i:s T')) . "\n" .
-				$url .
-				NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
 
-	nfw_mail( $subject, $message, 'unsubscribe');
+	/**
+	 * Email notification.
+	 */
+	$subject = [];
+	$content = [ $user_login . $whoami, NFW_REMOTE_ADDR,
+					ucfirst( date_i18n('F j, Y @ H:i:s T') ), home_url('/') ];
+
+	NinjaFirewall_mail::send('user_login', $subject, $content, '', [], 1 );
 }
 
 // ---------------------------------------------------------------------			s1:h0
@@ -1024,97 +1039,125 @@ function nf_check_dbdata() {
 
 	$nfw_options = nfw_get_option('nfw_options');
 
-	// Don't do anything if NinjaFirewall is disabled or DB monitoring option is off :
-	if ( empty( $nfw_options['enabled'] ) || empty($nfw_options['a_51']) ) { return; }
+	/**
+	 * Don't do anything if NinjaFirewall is disabled or DB monitoring option is off.
+	 */
+	if ( empty( $nfw_options['enabled'] ) || empty( $nfw_options['a_51'] ) ) {
+		return;
+	}
 
-	// Don't run more than once every minute:
+	/**
+	 * Don't run more than once every minute.
+	 */
 	if ( get_transient('nfw_db_check') !== false ) {
 		return;
 	}
 
-	// This can be defined in the wp-config.php or .htninja script
+	/**
+	 * This can be defined in the wp-config.php or .htninja script.
+	 */
 	if ( defined('NFW_DBCHECK_INTERVAL') ) {
 		$dbcheck_interval = (int) NFW_DBCHECK_INTERVAL;
 		if ( $dbcheck_interval < 60 ) {
 			$dbcheck_interval = 60;
 		}
 	} else {
-		// Default is 60 seconds
+		/**
+		 * Default is 60 seconds.
+		 */
 		$dbcheck_interval = 60;
 	}
 
 	if ( is_multisite() ) {
 		global $current_blog;
-		$db_hash = NFW_LOG_DIR .'/nfwlog/cache/db_hash.'. $current_blog->site_id .'-'. $current_blog->blog_id .'.php';
+		$db_hash = NFW_LOG_DIR .'/nfwlog/cache/db_hash.'. $current_blog->site_id .'-'.
+					$current_blog->blog_id .'.php';
 	} else {
 		global $blog_id;
 		$db_hash = NFW_LOG_DIR .'/nfwlog/cache/db_hash.'. $blog_id .'.php';
 	}
 
 	$adm_users = nf_get_dbdata();
-	// Some oject caching plugins can return an array with empty keys.
+	/**
+	 * Some object caching plugins can return an array with empty keys.
+	 */
 	if ( empty( $adm_users[0]->user_login ) ) {
 		set_transient('nfw_db_check', 1, $dbcheck_interval );
 		return;
 	}
 
-	// Sort by ID to prevent false alerts:
+	/**
+	 * Sort by ID to prevent false alerts.
+	 */
 	usort( $adm_users, 'nfw_sort_by_id');
 
-	if (! file_exists( $db_hash ) ) {
-		// We don't have any hash yet, let's create one and quit
-		// (md5 is faster than sha1 or crc32 with long strings) :
-		@file_put_contents( $db_hash, md5( serialize( $adm_users) ), LOCK_EX );
+	if (! is_file( $db_hash ) ) {
+		/**
+		 * We don't have any hash yet, let's create one and quit
+		 * (md5 is faster than sha1 with long strings)
+		 */
+		@file_put_contents( $db_hash, md5( serialize( $adm_users ) ), LOCK_EX );
 		set_transient('nfw_db_check', 1, $dbcheck_interval );
 		return;
 	}
 
 	$old_hash = trim ( file_get_contents( $db_hash ) );
 	if (! $old_hash ) {
-		@file_put_contents( $db_hash, md5( serialize( $adm_users) ), LOCK_EX );
+		@file_put_contents( $db_hash, md5( serialize( $adm_users ) ), LOCK_EX );
 		set_transient('nfw_db_check', 1, $dbcheck_interval );
 		return;
 	}
 
-	// Compare both hashes:
+	/**
+	 * Compare both hashes.
+	 */
 	if ( $old_hash == md5( serialize( $adm_users ) ) ) {
 		set_transient('nfw_db_check', 1, $dbcheck_interval );
 		return;
 
 	} else {
-		// Create or update 60-second transient:
+		/**
+		 * Create or update 60-second transient.
+		 */
 		set_transient('nfw_db_check', 1, $dbcheck_interval );
-
-		// Save the new hash:
+		/**
+		 * Save the new hash.
+		 */
 		$tmp = @file_put_contents( $db_hash, md5( serialize( $adm_users ) ), LOCK_EX );
 		if ( $tmp === FALSE ) {
 			return;
 		}
 
-		// Send an email to the admin:
-		$subject = __('[NinjaFirewall] Alert: Database changes detected', 'ninjafirewall');
-		$message = __('NinjaFirewall has detected that one or more administrator accounts were modified in the database:', 'ninjafirewall') . "\n\n";
-		// Even if this is a multisite install, we display
-		// the requested blog, not the main site:
-		$message .=__('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-		$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
-		$message.= sprintf(__('Total administrators : %s', 'ninjafirewall'), count($adm_users) ) . "\n\n";
+		/**
+		 * Retrieve each admin data.
+		 */
+		$data = '';
 		foreach( $adm_users as $adm ) {
-			$message.= 'Admin ID: ' . $adm->ID . "\n";
-			$message.= '-user_login: ' . $adm->user_login . "\n";
-			$message.= '-user_nicename: ' . $adm->user_nicename . "\n";
-			$message.= '-user_email: ' . $adm->user_email . "\n";
-			$message.= '-user_registered: ' . $adm->user_registered . "\n";
-			$message.= '-display_name: ' . $adm->display_name . "\n\n";
+			$data.= "Admin ID: {$adm->ID}\n";
+			$data.= "-user_login: {$adm->user_login}\n";
+			$data.= "-user_nicename: {$adm->user_nicename}\n";
+			$data.= "-user_email: {$adm->user_email}\n";
+			$data.= "-user_registered: {$adm->user_registered}\n";
+			$data.= "-display_name: {$adm->display_name}\n\n";
 		}
-		$message.=  __('If you cannot see any modifications in the above fields, it is possible that the administrator password was changed.', 'ninjafirewall'). "\n\n";
-		$message.= __('This notification can be turned off from NinjaFirewall "Event Notifications" page.', 'ninjafirewall') . "\n\n";
-		$message.= NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
-		nfw_mail( $subject, $message, 'unsubscribe');
 
-		// Log event if required:
-		if (! empty($nfw_options['a_41']) ) {
-			nfw_log2('Database changes detected', 'administrator account', 4, 0);
+		/**
+		 * Email notification.
+		 */
+		$subject = [];
+		$content = [ home_url('/'), ucfirst( date_i18n('F j, Y @ H:i:s T') ),
+						count($adm_users), $data ];
+
+		NinjaFirewall_mail::send('database_change', $subject, $content, '', [], 1 );
+
+		/**
+		 * Log event if required.
+		 */
+		if (! empty( $nfw_options['a_41'] ) ) {
+			nfw_log2(
+				__('Database changes detected', 'ninjafirewall'),
+				__('administrator account', 'ninjafirewall'), 4, 0
+			);
 		}
 	}
 }
@@ -1218,9 +1261,15 @@ function nfwhook_user_meta( $id, $key, $value ) {
 
 	$nfw_options = nfw_get_option('nfw_options');
 
-	// Note: "NFW_DISABLE_PRVESC2" is now deprecated. Use the corresponding
-	// firewall policy to disable it instead:
-	if ( NF_DISABLED || defined('NFW_DISABLE_PRVESC2') || empty( $nfw_options['disallow_privesc'] ) ) { return; }
+	/**
+	 * Note: "NFW_DISABLE_PRVESC2" is now deprecated. Use the corresponding
+	 * firewall policy to disable it instead.
+	 */
+	if ( NF_DISABLED || defined('NFW_DISABLE_PRVESC2') ||
+		empty( $nfw_options['disallow_privesc'] ) ) {
+
+		return;
+	}
 
 	global $wpdb;
 
@@ -1228,8 +1277,13 @@ function nfwhook_user_meta( $id, $key, $value ) {
 		$key = serialize( $key );
 	}
 
-	// "current_user_can" must remain here, see https://wordpress.org/support/topic/rest-api-problem-2/page/2/#post-11789636
-	if ( preg_match( "/{$wpdb->base_prefix}([0-9]+_)?capabilities/", $key ) && ! current_user_can('edit_users') ) {
+	/**
+	 * "current_user_can" must remain here,
+	 * see https://wordpress.org/support/topic/rest-api-problem-2/page/2/#post-11789636
+	 */
+	if ( preg_match( "/{$wpdb->base_prefix}([0-9]+_)?capabilities/", $key ) &&
+		! current_user_can('edit_users') ) {
+
 		if ( is_array( $value ) ) {
 			$value = serialize( $value );
 		}
@@ -1241,14 +1295,18 @@ function nfwhook_user_meta( $id, $key, $value ) {
 
 			return;
 		}
-		// If it's a subsite in a network, check what we are supposed to do
+		/**
+		 * If it's a subsite in a network, check what we are supposed to do.
+		 */
 		if ( is_main_site() !== true && empty( $nfw_options['disallow_privesc_mu'] ) ) {
 			return;
 		}
 
 		$user_info = get_userdata( $id );
 		$whoisit = '';
-		$check_user = array('subscriber', 'contributor', 'author', 'customer', 'bbp_participant', 'bbp_spectator');
+		$check_user = [
+			'subscriber', 'contributor', 'author', 'customer', 'bbp_participant', 'bbp_spectator'
+		];
 		foreach( $user_info->roles as $k => $v ) {
 			if ( in_array( $v, $check_user ) ) {
 				$whoisit = $v;
@@ -1259,44 +1317,40 @@ function nfwhook_user_meta( $id, $key, $value ) {
 			return;
 		}
 
-		if ( strlen( $value ) > 200 ) { $value = mb_substr( $value, 0, 200, 'utf-8') . '...'; }
+		if ( strlen( $value ) > 200 ) {
+			$value = mb_substr( $value, 0, 200, 'utf-8') . '...';
+		}
 		$subject = __('Blocked privilege escalation attempt', 'ninjafirewall');
-		nfw_log2('WordPress: ' . $subject, "$key: $value", 3, 0);
+		nfw_log2('WordPress: '. $subject, "$key: $value", 3, 0 );
 
-		// Alert the admin:
-		$subject = '[NinjaFirewall] ' . $subject;
-
-		$message = __('NinjaFirewall has blocked an attempt to modify a user capability by someone who does not have administrative privileges:', 'ninjafirewall') . "\n\n";
-
-		$message.= __('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-
-		// Show current blog, not main site (multisite):
 		if (! empty( $user_info->user_login ) ) {
-			$message.= __('Username:', 'ninjafirewall') .' '. "{$user_info->user_login}, ID: $id\n";
-		}
-		$message.= "meta_key: $key\n";
-		$message.= "meta_value: $value\n";
-		$message.= __('User IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n";
-		$message.= 'SCRIPT_FILENAME: ' . $_SERVER['SCRIPT_FILENAME'] . "\n";
-		$message.= 'REQUEST_URI: ' . $_SERVER['REQUEST_URI'] . "\n";
-		$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
-
-		// Attach PHP backtrace
-		$return  = nfw_debug_backtrace( $nfw_options );
-		$message.= $return['message'];
-		$message.= __('This protection (and notification) can be turned off from NinjaFirewall "Firewall Policies" page.', 'ninjafirewall') . "\n\n";
-		$message.= NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
-
-		if ( empty( $return['nftmpfname'] ) ) {
-			nfw_mail( $subject, $message, 'unsubscribe');
-
+			$username = "{$user_info->user_login}, ID: $id";
 		} else {
-			// Attach backtrace and delete temp file:
-			nfw_mail( $subject, $message, 'unsubscribe', $headers = '', $return['nftmpfname'] );
-			unlink( $return['nftmpfname'] );
+			$usename = '-';
 		}
 
-		// Block it
+		/**
+		 * Backtrace.
+		 */
+		$return  = nfw_debug_backtrace( $nfw_options );
+		if (! empty( $return['nftmpfname'] ) ) {
+			$attachment = $return['nftmpfname'];
+		} else {
+			$attachment = [];
+		}
+
+		/**
+		 * Email notification.
+		 */
+		$subject = [];
+		$content = [ home_url('/'), $username, $key, $value, NFW_REMOTE_ADDR,
+						$_SERVER['SCRIPT_FILENAME'], $_SERVER['REQUEST_URI'],
+						date_i18n('F j, Y @ H:i:s T') , $return['message'] ];
+		NinjaFirewall_mail::send('privilege_escalation', $subject, $content, '', $attachment, 1 );
+
+		/**
+		 * Block the request.
+		 */
 		NinjaFirewall_session::delete();
 		wp_die(
 			'NinjaFirewall: '. __('You are not allowed to perform this task.', 'ninjafirewall'),
@@ -1312,8 +1366,8 @@ function nfw_login_form_hook( $message ) {
 
 	if (! empty( NinjaFirewall_session::read('nfw_bfd') ) ) {
 		return '<p class="message" id="nfw_login_msg">'.
-			esc_html__('NinjaFirewall brute-force protection is enabled and you are temporarily whitelisted.', 'ninjafirewall') .
-			'</p><br />';
+		esc_html__('NinjaFirewall brute-force protection is enabled and you are temporarily whitelisted.',
+		'ninjafirewall') .'</p><br />';
 	}
 	return $message;
 }
@@ -1501,50 +1555,24 @@ function nf_monitor_options_alert( $option, $value, $old_value, $type ) {
 
 	$nfw_options = nfw_get_option('nfw_options');
 
-	$action = __('The attempt was blocked and the option was reversed to its original value.', 'ninjafirewall');
-
-	// WP settings:
-	if ( $type == 'settings') {
-
-		$subject = '[NinjaFirewall] ' . __('Attempt to modify WordPress settings', 'ninjafirewall');
-		$message = __('NinjaFirewall has blocked an attempt to modify some important WordPress settings by a user that does not have administrative privileges:', 'ninjafirewall') . "\n\n";
-		$message.= sprintf( __('Option: %s', 'ninjafirewall') ."\n", $option );
-		$message.= sprintf( __('Original value: %s', 'ninjafirewall') ."\n", $old_value );
-		$message.= sprintf( __('Modified value: %s', 'ninjafirewall') ."\n", $value );
-		$message.= sprintf( __('Action taken: %s', 'ninjafirewall') ."\n\n", $action );
-
-	// Misc. injection:
-	} else {
-		$subject = '[NinjaFirewall] ' . __('Code injection attempt in WordPress options table', 'ninjafirewall');
-		$message = __('NinjaFirewall has blocked an attempt to inject code in the WordPress options table by a user that does not have administrative privileges:', 'ninjafirewall') . "\n\n";
-		$message.= sprintf( __('Option: %s', 'ninjafirewall') ."\n", $option );
-		$message.= sprintf( __('Code: %s', 'ninjafirewall') ."\n", $value );
-		$message.= sprintf( __('Action taken: %s', 'ninjafirewall') ."\n\n", $action );
-	}
-
-	// Attach PHP backtrace
+	/**
+	 * Backtrace.
+	 */
 	$return  = nfw_debug_backtrace( $nfw_options );
-	$message.= $return['message'];
-
-	// Show current blog, not main site (multisite):
-	$message.= __('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-	$message.= __('User IP:', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n";
-	$message.= 'SCRIPT_FILENAME: ' . $_SERVER['SCRIPT_FILENAME'] . "\n";
-	$message.= 'REQUEST_URI: ' . $_SERVER['REQUEST_URI'] . "\n";
-	$message.= __('Date:', 'ninjafirewall') .' '. date_i18n('F j, Y @ H:i:s T') . "\n\n";
-
-	$message.= __('This protection (and notification) can be turned off from NinjaFirewall "Firewall Policies" page.', 'ninjafirewall') . "\n\n";
-	$message.= NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
-
-	if ( empty( $return['nftmpfname'] ) ) {
-		nfw_mail( $subject, $message, 'unsubscribe');
-
+	if (! empty( $return['nftmpfname'] ) ) {
+		$attachment = $return['nftmpfname'];
 	} else {
-		// Attach backtrace and delete temp file:
-		nfw_mail( $subject, $message, 'unsubscribe', $headers = '', $return['nftmpfname'] );
-		unlink( $return['nftmpfname'] );
+		$attachment = [];
 	}
 
+	/**
+	 * Email notification.
+	 */
+	$subject = [];
+	$content = [ $option, $old_value, $value, home_url('/'), NFW_REMOTE_ADDR,
+					$_SERVER['SCRIPT_FILENAME'], $_SERVER['REQUEST_URI'],
+					date_i18n('F j, Y @ H:i:s T'), $return['message'] ];
+	NinjaFirewall_mail::send('wp_settings', $subject, $content, '', $attachment, 1 );
 }
 
 // ---------------------------------------------------------------------
@@ -1617,60 +1645,6 @@ function nfw_in_plugin_update_message( $plugin_data, $r ) {
 	'<a href="https://blog.nintechnet.com/how-to-get-informed-about-the-latest-security-updates-in-your-wordpress-plugins-and-themes/" target="_blank">' .
 	esc_html__('More info about this warning.', 'ninjafirewall') .
 	'</a></span>';
-}
-
-// ---------------------------------------------------------------------
-// Send a notification email to one or multiple recipient with a unsubscribe
-// link for admin users who don't have anymore access to the site.
-// If the recipient's email was taken from the get_option('admin_email') option,
-// we don't send any link as we don't want to remove that email.
-
-function nfw_mail( $subject, $message, $unsubscribe = 0, $headers = '', $attachments = '') {
-
-	$nfw_options = nfw_get_option('nfw_options');
-
-	if ( is_multisite() && ( $nfw_options['alert_sa_only'] == 2 ) ) {
-		$recipient = get_option('admin_email');
-		// User is the main admin of the site, we can't help here:
-		$unsubscribe = 0;
-	} else {
-		$recipient = $nfw_options['alert_email'];
-	}
-
-	if ( empty( $recipient ) ) {
-		nfw_log_error( sprintf( __('Cannot send notification, no valid email found (%s)', 'ninjafirewall'), 'alert_email') );
-		return;
-	}
-
-	require_once 'email_sodium.php';
-
-	// In order to use Sodium, we must have WordPress >=5.2 or PHP >= 7.2.0
-	if (! empty( $unsubscribe ) ) {
-		$unsubscribe = nfw_check_sodium();
-	}
-
-	if (! empty( $unsubscribe ) ) {
-		// Link will be valid for 12 hours
-		$expire = time() + 60*60*12;
-		$admin_email = get_option('admin_email');
-		// We need to create a unique unsubscribe link for each recipients
-		$recipients = explode(',', $recipient );
-		foreach( $recipients as $to ) {
-			$to = trim( $to );
-			// If that's the admin email, we can't remove it:
-			if ( $to == $admin_email ) {
-				$click = '';
-			} else {
-				$link = nfw_sodium_encrypt( $to, $expire, $unsubscribe );
-				$uri = home_url('/') ."?nfw_stop_notification=$link";
-				$click = "\n\n". sprintf( __("If you don't have access to that site any longer, you can remove your email by clicking the following link (valid for 12 hours): %s", 'ninjafirewall'), $uri );
-			}
-			wp_mail( $to, $subject, $message . $click, $headers, $attachments );
-		}
-
-	} else {
-		wp_mail( $recipient, $subject, $message, $headers, $attachments );
-	}
 }
 
 // ---------------------------------------------------------------------

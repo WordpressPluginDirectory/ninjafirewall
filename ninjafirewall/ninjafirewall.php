@@ -3,7 +3,7 @@
 Plugin Name: NinjaFirewall (WP Edition)
 Plugin URI: https://nintechnet.com/
 Description: A true Web Application Firewall to protect and secure WordPress.
-Version: 4.7.1
+Version: 4.7.2
 Author: The Ninja Technologies Network
 Author URI: https://nintechnet.com/
 License: GPLv3 or later
@@ -11,7 +11,7 @@ Network: true
 Text Domain: ninjafirewall
 Domain Path: /languages
 */
-define('NFW_ENGINE_VERSION', '4.7.1');
+define('NFW_ENGINE_VERSION', '4.7.2');
 /*
  +=====================================================================+
  |    _   _ _        _       _____ _                        _ _        |
@@ -48,52 +48,31 @@ function nfw_load_txtdomain() {
 add_action('plugins_loaded','nfw_load_txtdomain');
 
 /* ------------------------------------------------------------------ */
+define('NFW_NULL_BYTE', 2);
+define('NFW_SCAN_BOTS', 531);
+define('NFW_ASCII_CTRL', 500);
+define('NFW_DOC_ROOT', 510);
+define('NFW_WRAPPERS', 520);
+define('NFW_OBJECTS', 525);
+define('NFW_LOOPBACK', 540);
+define('NFW_DEFAULT_MSG', '<br /><br /><br /><br /><center>' .
+	sprintf('Sorry %s, your request cannot be processed.', '<b>%%REM_ADDRESS%%</b>') .
+	'<br />' . 'For security reasons, it was blocked and logged.' .
+	'<br /><br />%%NINJA_LOGO%%<br /><br />' .
+	'If you believe this was an error please contact the<br />webmaster and enclose the following incident ID:' .
+	'<br /><br />[ <b>#%%NUM_INCIDENT%%</b> ]</center>'
+);
 
 /**
  * Since WP 6.7, translation loading must not be triggered too early.
  */
-add_action('init', 'ninjafirewall_wp_i18n_constants');
-function ninjafirewall_wp_i18n_constants() {
-	$null = __('A true Web Application Firewall to protect and secure WordPress.', 'ninjafirewall');
-	define('NFW_NULL_BYTE', 2);
-	define('NFW_SCAN_BOTS', 531);
-	define('NFW_ASCII_CTRL', 500);
-	define('NFW_DOC_ROOT', 510);
-	define('NFW_WRAPPERS', 520);
-	define('NFW_OBJECTS', 525);
-	define('NFW_LOOPBACK', 540);
-	define( 'NFW_DEFAULT_MSG', '<br /><br /><br /><br /><center>' .
-			sprintf( __('Sorry %s, your request cannot be processed.', 'ninjafirewall'), '<b>%%REM_ADDRESS%%</b>') .
-			'<br />' . __('For security reasons, it was blocked and logged.', 'ninjafirewall') .
-			'<br /><br />%%NINJA_LOGO%%<br /><br />' .
-				__('If you believe this was an error please contact the<br />webmaster and enclose the following incident ID:', 'ninjafirewall') .
-			'<br /><br />[ <b>#%%NUM_INCIDENT%%</b> ]</center>'
-	);
-	$err_fw = [
-		1	=> __('Cannot find WordPress configuration file', 'ninjafirewall'),
-		2	=>	__('Cannot read WordPress configuration file', 'ninjafirewall'),
-		3	=>	__('Cannot retrieve WordPress database credentials', 'ninjafirewall'),
-		4	=>	__('Cannot connect to WordPress database', 'ninjafirewall'),
-		5	=>	__('Cannot retrieve user options from database (#2)', 'ninjafirewall'),
-		6	=>	__('Cannot retrieve user options from database (#3)', 'ninjafirewall'),
-		7	=>	__('Cannot retrieve user rules from database (#2)', 'ninjafirewall'),
-		8	=>	__('Cannot retrieve user rules from database (#3)', 'ninjafirewall'),
-		9	=>	__('The firewall has been disabled from the <a href="admin.php?page=nfsubopt">administration console</a>', 'ninjafirewall'),
-		10	=> __('Unable to communicate with the firewall. Please check your settings', 'ninjafirewall'),
-		11	=>	__('Cannot retrieve user options from database (#1)', 'ninjafirewall'),
-		12	=>	__('Cannot retrieve user rules from database (#1)', 'ninjafirewall'),
-		13 => sprintf( __("The firewall cannot access its log and cache folders. If you changed the name of WordPress %s or %s folders, you must define NinjaFirewall's built-in %s constant (see %s for more info)", 'ninjafirewall'), '<code>/wp-content/</code>', '<code>/plugins/</code>', '<code>NFW_LOG_DIR</code>', "<a href='https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/' target='_blank'>Path to NinjaFirewall's log and cache directory</a>"),
-		14 => __('The PHP msqli extension is missing or not loaded.', 'ninjafirewall'),
-		15	=>	__('Cannot retrieve user options from database (#4)', 'ninjafirewall'),
-		16	=>	__('Cannot retrieve user rules from database (#4)', 'ninjafirewall')
-	];
-}
+require_once __DIR__ . '/lib/i18n.php';
 
 if (! defined('NFW_LOG_DIR') ) {
-	define('NFW_LOG_DIR', WP_CONTENT_DIR);
+	define('NFW_LOG_DIR', WP_CONTENT_DIR );
 }
-if (! empty($_SERVER['DOCUMENT_ROOT']) && $_SERVER['DOCUMENT_ROOT'] != '/' ) {
-	$_SERVER['DOCUMENT_ROOT'] = rtrim( $_SERVER['DOCUMENT_ROOT'] , '/' );
+if (! empty( $_SERVER['DOCUMENT_ROOT'] ) && $_SERVER['DOCUMENT_ROOT'] != '/') {
+	$_SERVER['DOCUMENT_ROOT'] = rtrim( $_SERVER['DOCUMENT_ROOT'] , '/');
 }
 
 /* ------------------------------------------------------------------ */
@@ -113,10 +92,12 @@ if ( defined('NFWSESSION') ) {
 	require_once __DIR__ .'/lib/class-php-session.php';
 }
 
-// class-helpers could be already loaded if the firewall is loaded
+/**
+ * Those classes could be already loaded by the firewall (if enabled).
+ */
 require_once __DIR__ . '/lib/class-helpers.php';
+require_once __DIR__ .'/lib/class_mail.php';
 
-require __DIR__ . '/lib/custom_plugin.php';
 require __DIR__ . '/lib/scheduled_tasks.php';
 require __DIR__ . '/lib/utils.php';
 require __DIR__ . '/lib/events.php';
@@ -203,16 +184,18 @@ register_activation_hook( __FILE__, 'nfw_activate' );
 
 function nfw_deactivate() {
 
-	if ( defined('WP_CLI') && WP_CLI && PHP_SAPI === 'cli' ) {
+	if ( defined('WP_CLI') && WP_CLI && PHP_SAPI === 'cli') {
 		$php_cli = true;
 	}
 
 	if (! isset( $php_cli ) ) {
-		// Warn if the user does not have the 'unfiltered_html' capability:
-		if (! current_user_can( 'unfiltered_html' ) ) {
-			exit( esc_html__('You do not have "unfiltered_html" capability. Please enable it in order to run NinjaFirewall (or make sure you do not have "DISALLOW_UNFILTERED_HTML" in your wp-config.php script).', 'ninjafirewall'));
+		/**
+		 * Warn if the user does not have the 'unfiltered_html' capability unless it's CLI.
+		 */
+		if (! current_user_can('unfiltered_html') ) {
+			exit( esc_html__('You do not have "unfiltered_html" capability. Please enable it in order to run NinjaFirewall (or make sure you do not have "DISALLOW_UNFILTERED_HTML" in your wp-config.php script).', 'ninjafirewall') );
 		}
-		nf_not_allowed( 'block', __LINE__ );
+		nf_not_allowed('block', __LINE__ );
 
 		global $current_user;
 		$current_user	= wp_get_current_user();
@@ -223,40 +206,46 @@ function nfw_deactivate() {
 		$user_roles		= '-';
 	}
 
-	$nfw_options = nfw_get_option( 'nfw_options' );
+	$nfw_options = nfw_get_option('nfw_options');
 
-	// Reused from Firewall Options
-	if ( empty( $_REQUEST['action'] ) || strpos( $_REQUEST['action'], 'deactivate' ) === false ) {
-		$subject = __('[NinjaFirewall] Alert: Firewall is disabled', 'ninjafirewall');
+	/**
+	 * Re-used code from Firewall Options.
+	 */
+	if ( empty( $_REQUEST['action'] ) || strpos( $_REQUEST['action'], 'deactivate') === false ) {
+
 		if ( is_multisite() ) {
-			$url = __('-Blog :', 'ninjafirewall') .' '. network_home_url('/') . "\n\n";
+			$url = network_home_url('/');
 		} else {
-			$url = __('-Blog :', 'ninjafirewall') .' '. home_url('/') . "\n\n";
+			$url = home_url('/');
 		}
-		$message = __('Someone disabled NinjaFirewall from your WordPress admin dashboard:', 'ninjafirewall') . "\n\n";
-		$message .= __('-User :', 'ninjafirewall') ." $user_login ($user_roles)\n" .
-			__('-IP   :', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n" .
-			__('-Date :', 'ninjafirewall') .' '. ucfirst( date_i18n('F j, Y @ H:i:s O') ) ."\n" .
-			$url .
-			NF_PG_SIGNATURE ."\n";
-		nfw_mail( $subject, $message, 'unsubscribe' );
+
+		$subject = [ ];
+		$content = [ "$user_login ($user_roles)", NFW_REMOTE_ADDR,
+						ucfirst( date_i18n('F j, Y @ H:i:s O') ), $url ];
+
+		NinjaFirewall_mail::send('disabled', $subject, $content, '', [], 1 );
 	}
 
 	$nfw_options['enabled'] = 0;
 	nfw_disable_wpwaf();
 
-	if ( file_exists( NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php' ) ) {
-		rename(NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php', NFW_LOG_DIR . '/nfwlog/cache/bf_conf_off.php');
+	/**
+	 * Disable brute-force protection.
+	 */
+	if ( file_exists( NFW_LOG_DIR .'/nfwlog/cache/bf_conf.php') ) {
+		rename(NFW_LOG_DIR .'/nfwlog/cache/bf_conf.php', NFW_LOG_DIR .'/nfwlog/cache/bf_conf_off.php');
 	}
 
-	nfw_update_option( 'nfw_options', $nfw_options);
+	nfw_update_option('nfw_options', $nfw_options);
 
-	// Remove any existing cron
+	/**
+	 * Remove any existing cron.
+	 */
 	nfw_delete_scheduled_tasks();
 
 }
 
-register_deactivation_hook( __FILE__, 'nfw_deactivate' );
+register_deactivation_hook( __FILE__, 'nfw_deactivate');
 
 /* ------------------------------------------------------------------ */
 // Load script/style files

@@ -1,23 +1,19 @@
 <?php
 /*
- +---------------------------------------------------------------------+
- | NinjaFirewall (WP Edition)                                          |
- |                                                                     |
- | (c) NinTechNet - https://nintechnet.com/                            |
- +---------------------------------------------------------------------+
- | This program is free software: you can redistribute it and/or       |
- | modify it under the terms of the GNU General Public License as      |
- | published by the Free Software Foundation, either version 3 of      |
- | the License, or (at your option) any later version.                 |
- |                                                                     |
- | This program is distributed in the hope that it will be useful,     |
- | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
- | GNU General Public License for more details.                        |
- +---------------------------------------------------------------------+ i18n+ / sa / 2
+ +=====================================================================+
+ |    _   _ _        _       _____ _                        _ _        |
+ |   | \ | (_)_ __  (_) __ _|  ___(_)_ __ _____      ____ _| | |       |
+ |   |  \| | | '_ \ | |/ _` | |_  | | '__/ _ \ \ /\ / / _` | | |       |
+ |   | |\  | | | | || | (_| |  _| | | | |  __/\ V  V / (_| | | |       |
+ |   |_| \_|_|_| |_|/ |\__,_|_|   |_|_|  \___| \_/\_/ \__,_|_|_|       |
+ |                |__/                                                 |
+ |  (c) NinTechNet Limited ~ https://nintechnet.com/                   |
+ +=====================================================================+
 */
 
-if (! defined('NFW_ENGINE_VERSION') ) { die('Forbidden'); }
+if (! defined('NFW_ENGINE_VERSION') ) {
+	die('Forbidden');
+}
 
 $log_dir				= NFW_LOG_DIR . '/nfwlog/cache/';
 $nfmon_snapshot	= $log_dir . 'nfilecheck_snapshot.php';
@@ -715,80 +711,82 @@ function nf_scheduled_scan() {
 
 // ---------------------------------------------------------------------
 
-function nf_scan_email($nfmon_diff, $log_dir) {
+function nf_scan_email( $nfmon_diff, $log_dir ) {
 
-	$nfw_options = nfw_get_option('nfw_options');
+	if ( is_multisite() ) {
+		$url = network_home_url('/');
+	} else {
+		$url = home_url('/');
+	}
 
-	// Changes were detected :
+	/**
+	 * Changes were detected.
+	 */
 	if ( $nfmon_diff ) {
-		$stat = stat($nfmon_diff);
-		$data = '== NinjaFirewall File Check (diff)'. "\n";
-		$data.= '== ' . site_url() . "\n";
-		$data.= '== ' . date_i18n('M d, Y @ H:i:s O', $stat['ctime']) . "\n\n";
+		$stat = stat( $nfmon_diff );
+		$data = '== NinjaFirewall File Check (diff)'."\n";
+		$data.= '== ' . site_url() ."\n";
+		$data.= '== ' . date_i18n('M d, Y @ H:i:s O', $stat['ctime'] ) ."\n\n";
 		$data.= '[+] = ' . __('New file', 'ninjafirewall') .
 					'      [!] = ' . __('Modified file', 'ninjafirewall') .
 					'      [-] = ' . __('Deleted file', 'ninjafirewall') .
 					"\n\n";
-		$n = 0; $m = 0; $d = 0;
-		$fh = fopen($nfmon_diff, 'r');
-		while (! feof($fh) ) {
-			$res = explode('::', fgets($fh) );
-			if ( empty($res[1]) ) { continue; }
-			// New file :
-			if ($res[1] == 'N') {
-				$data .= '[+] ' . $res[0] . "\n";
+		$n = 0;
+		$m = 0;
+		$d = 0;
+		$fh = fopen( $nfmon_diff, 'r');
+		while (! feof( $fh ) ) {
+			$res = explode('::', fgets( $fh ) );
+			if ( empty( $res[1] ) ) {
+				continue;
+			}
+			/**
+			 * New file.
+			 */
+			if ( $res[1] == 'N') {
+				$data .= "[+] {$res[0]}\n";
 				++$n;
-			// Deleted file :
-			} elseif ($res[1] == 'D') {
-				$data .= '[-] ' . $res[0] . "\n";
+			/**
+			 * Deleted file.
+			 */
+			} elseif ( $res[1] == 'D') {
+				$data .= "[-] {$res[0]}\n";
 				++$d;
-			// Modified file:
-			} elseif ($res[1] == 'M') {
-				$data .= '[!] ' . $res[0] . "\n";
+			/**
+			 * Modified file.
+			 */
+			} elseif ( $res[1] == 'M') {
+				$data .= "[!] {$res[0]}\n";
 				++$m;
 			}
 		}
-		fclose($fh);
+		fclose( $fh );
 		$data .= "\n== EOF\n";
-		@file_put_contents($log_dir . 'nf_filecheck.txt', $data, LOCK_EX);
-		$subject = __('[NinjaFirewall] Alert: File Check detection', 'ninjafirewall');
-		$msg = __('NinjaFirewall detected that changes were made to your files.', 'ninjafirewall') . "\n\n";
-		if ( is_multisite() ) {
-			$msg .=__('Blog:', 'ninjafirewall') .' '. network_home_url('/') . "\n";
-		} else {
-			$msg .=__('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-		}
-		$msg .= sprintf( __('Date: %s', 'ninjafirewall'), ucfirst(date_i18n('M d, Y @ H:i:s O')) )."\n\n";
-		// Display summary in the email body:
-		$msg .= sprintf( __('New files: %s', 'ninjafirewall'), $n ) ."\n";
-		$msg .= sprintf( __('Modified files: %s', 'ninjafirewall'), $m ) ."\n";
-		$msg .= sprintf( __('Deleted files: %s', 'ninjafirewall'), $d ) ."\n\n";
+		@file_put_contents( "{$log_dir}nf_filecheck.txt", $data, LOCK_EX );
 
-		$msg .= __('See attached file for details.', 'ninjafirewall') . "\n\n" .
-			NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
+		/**
+		 * Email notification.
+		 */
+		$subject = [ ];
+		$content = [ $url, ucfirst( date_i18n('M d, Y @ H:i:s O') ), $n, $m, $d ];
+		NinjaFirewall_mail::send(
+			'fc_detection', $subject, $content, '', "{$log_dir}nf_filecheck.txt", 1
+		);
 
-		nfw_mail( $subject, $msg, 'unsubscribe', $headers = '', $log_dir . 'nf_filecheck.txt' );
-		unlink($log_dir . 'nf_filecheck.txt');
-
+	/**
+	 * User asked to always receive a report after a scheduled scan.
+	 */
 	} else {
-
-		// User asked to always receive a report after a scheduled scan :
-		$subject = __('[NinjaFirewall] File Check report', 'ninjafirewall');
-		$msg = __('NinjaFirewall did not detect changes in your files.', 'ninjafirewall') . "\n\n";
-		if ( is_multisite() ) {
-			$msg .=__('Blog:', 'ninjafirewall') .' '. network_home_url('/') . "\n";
-		} else {
-			$msg .=__('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
-		}
-		$msg .= sprintf( __('Date: %s', 'ninjafirewall'), ucfirst(date_i18n('M d, Y @ H:i:s O')) ) . "\n\n" .
-			NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
-
-		nfw_mail( $subject, $msg, 'unsubscribe' );
+		/**
+		 * Email notification.
+		 */
+		$subject = [ ];
+		$content = [ $url, ucfirst( date_i18n('M d, Y @ H:i:s O') ) ];
+		NinjaFirewall_mail::send('fc_report', $subject, $content, '', [], 1 );
 	}
 }
 
 // ---------------------------------------------------------------------
-
 function nf_fc_metrics( $action = 'start', $starttime = 0 ) {
 
 	if ( function_exists('hrtime') ) {

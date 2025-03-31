@@ -1,20 +1,14 @@
 <?php
 /*
- +---------------------------------------------------------------------+
- | NinjaFirewall (WP Edition)                                          |
- |                                                                     |
- | (c) NinTechNet - https://nintechnet.com/                            |
- +---------------------------------------------------------------------+
- | This program is free software: you can redistribute it and/or       |
- | modify it under the terms of the GNU General Public License as      |
- | published by the Free Software Foundation, either version 3 of      |
- | the License, or (at your option) any later version.                 |
- |                                                                     |
- | This program is distributed in the hope that it will be useful,     |
- | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
- | GNU General Public License for more details.                        |
- +---------------------------------------------------------------------+ i18n+ / sa / 2
+ +=====================================================================+
+ |    _   _ _        _       _____ _                        _ _        |
+ |   | \ | (_)_ __  (_) __ _|  ___(_)_ __ _____      ____ _| | |       |
+ |   |  \| | | '_ \ | |/ _` | |_  | | '__/ _ \ \ /\ / / _` | | |       |
+ |   | |\  | | | | || | (_| |  _| | | | |  __/\ V  V / (_| | | |       |
+ |   |_| \_|_|_| |_|/ |\__,_|_|   |_|_|  \___| \_/\_/ \__,_|_|_|       |
+ |                |__/                                                 |
+ |  (c) NinTechNet Limited ~ https://nintechnet.com/                   |
+ +=====================================================================+
 */
 
 if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
@@ -436,39 +430,43 @@ function nf_sub_options_import( $file ) {
 
 function nf_sub_options_alert( $what ) {
 
-	$nfw_options = nfw_get_option( 'nfw_options' );
-
 	global $current_user;
 	$current_user = wp_get_current_user();
 
-	$subject = __('[NinjaFirewall] Alert: Firewall is disabled', 'ninjafirewall');
+	/**
+	 * Home URL.
+	 */
 	if ( is_multisite() ) {
-		$url = __('-Blog :', 'ninjafirewall') .' '. network_home_url('/') . "\n\n";
+		$url = network_home_url('/');
 	} else {
-		$url = __('-Blog :', 'ninjafirewall') .' '. home_url('/') . "\n\n";
-	}
-	// Disabled ?
-	if ($what == 1) {
-		$message = __('Someone disabled NinjaFirewall from your WordPress admin dashboard:', 'ninjafirewall') . "\n\n";
-	// Debugging mode :
-	} elseif ($what == 2) {
-		$message = __('NinjaFirewall is disabled because someone enabled debugging mode from your WordPress admin dashboard:', 'ninjafirewall') . "\n\n";
-	// Imported configuration ?
-	} elseif ($what == 3) {
-		$subject = __('[NinjaFirewall] Alert: Firewall override settings', 'ninjafirewall');
-		$message = __('Someone imported a new configuration which overrode the firewall settings:', 'ninjafirewall') . "\n\n";
-	} else {
-		// Should never reach this line!
-		return;
+		$url = home_url('/');
 	}
 
-	$message .= __('-User :', 'ninjafirewall') .' '. $current_user->user_login . ' (' . $current_user->roles[0] . ")\n" .
-		__('-IP   :', 'ninjafirewall') .' '. NFW_REMOTE_ADDR . "\n" .
-		__('-Date :', 'ninjafirewall') .' '. ucfirst( date_i18n('F j, Y @ H:i:s O') ) ."\n" .
-		$url .
-		NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
+	/**
+	 * Disabled.
+	 */
+	if ( $what == 1 ) {
+		$template = 'disabled';
+	/**
+	 * Debugging mode.
+	 */
+	} elseif ( $what == 2 ) {
+		$template = 'debugging';
+	/**
+	 * Override settings.
+	 */
+	} else {
+		$template = 'fw_override';
+	}
 
-	nfw_mail( $subject, $message, 'unsubscribe' );
+	/**
+	 * Email notification.
+	 */
+	$subject = [ ];
+	$content = [ "{$current_user->user_login} ({$current_user->roles[0]})",
+					NFW_REMOTE_ADDR, ucfirst( date_i18n('F j, Y @ H:i:s O') ), $url ];
+
+	NinjaFirewall_mail::send( $template, $subject, $content, '', [], 1 );
 }
 
 // ---------------------------------------------------------------------

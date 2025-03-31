@@ -572,23 +572,22 @@ function nf_sub_updates_log($update_log, $msg) {
 
 // ---------------------------------------------------------------------
 
-function nf_sub_updates_notification($new_rules_version) {
+function nf_sub_updates_notification( $new_rules_version ) {
 
-	$nfw_options = nfw_get_option('nfw_options');
-
-	$subject = __('[NinjaFirewall] Security rules update', 'ninjafirewall');
-	$msg = __('NinjaFirewall security rules have been updated:', 'ninjafirewall') . "\n\n";
 	if ( is_multisite() ) {
-		$msg .=__('Blog:', 'ninjafirewall') .' '. network_home_url('/') . "\n";
+		$url = network_home_url('/');
 	} else {
-		$msg .=__('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";
+		$url = home_url('/');
 	}
-	$msg .=__('Rules version:', 'ninjafirewall') .' '. preg_replace('/(\d{4})(\d\d)(\d\d)/', '$1-$2-$3', $new_rules_version) . "\n";
-	$msg .= sprintf( __('Date: %s', 'ninjafirewall'), ucfirst(date_i18n('M d, Y @ H:i:s O')) ) . "\n\n" .
-			sprintf( __('This notification can be turned off from NinjaFirewall "%s" page.', 'ninjafirewall'), __('Security Rules', 'ninjafirewall') ) ."\n\n" .
-			NF_PG_SIGNATURE ."\n\n". NF_PG_MORESEC;
 
-	nfw_mail( $subject, $msg, 'unsubscribe' );
+	$rules = preg_replace('/(\d{4})(\d\d)(\d\d)/', '$1-$2-$3', $new_rules_version );
+
+	/**
+	 * Email notification.
+	 */
+	$subject = [ ];
+	$content = [ $url, $rules, ucfirst( date_i18n('M d, Y @ H:i:s O') ) ];
+	NinjaFirewall_mail::send('rules_update', $subject, $content, '', [], 1 );
 }
 
 // ---------------------------------------------------------------------

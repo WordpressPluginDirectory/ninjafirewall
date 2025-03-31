@@ -3,7 +3,7 @@ Contributors: nintechnet, bruandet
 Tags: security, firewall, malware, virus, protection
 Requires at least: 4.9
 Tested up to: 6.7
-Stable tag: 4.7.1
+Stable tag: 4.7.2
 Requires PHP: 7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -208,8 +208,18 @@ WordPress Sicherheit Plugin.
 
 Need more security? Take the time to explore our supercharged Premium edition: [NinjaFirewall WP+ Edition](https://nintechnet.com/ninjafirewall/wp-edition/?comparison)
 
-= 4.7.1 =
-* Fixed a potential "Function _load_textdomain_just_in_time was called incorrectly" PHP notice that can occurred with WordPress >=6.7.
+= 4.7.2 =
+
+* The email notification system was fully rewritten. You can now customize the subject and body of each email sent by NinjaFirewall. See our blog for more info about that: https://nin.link/nfmail
+* Fixed a PHP "Uncaught Error: Undefined constant NF_PG_SIGNATURE" error.
+* Fixed a PHP "ctype_digit(): Argument of type int will be interpreted as string in the future" notice.
+* Fixed a PHP "Undefined array key REMOTE_ADDR" warning that could be returned by some command line cron jobs.
+* Fixed a critical error with the saved "Custom HTTP headers" field on servers that supports HTTP/3.
+* WP+ Edition (Premium): Added a check to the firewall so that if the plugin configuration is corrupted, the file size check will be skipped to prevent blocking uploads.
+* Fixed some typos.
+* Updated Charts.js.
+* WP+ Edition (Premium): Updated GeoIP databases.
+* Many small fixes and adjustments.
 
 = 4.7 =
 

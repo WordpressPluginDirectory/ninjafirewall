@@ -1,23 +1,19 @@
 <?php
 /*
- +---------------------------------------------------------------------+
- | NinjaFirewall (WP Edition)                                          |
- |                                                                     |
- | (c) NinTechNet - https://nintechnet.com/                            |
- +---------------------------------------------------------------------+
- | This program is free software: you can redistribute it and/or       |
- | modify it under the terms of the GNU General Public License as      |
- | published by the Free Software Foundation, either version 3 of      |
- | the License, or (at your option) any later version.                 |
- |                                                                     |
- | This program is distributed in the hope that it will be useful,     |
- | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
- | GNU General Public License for more details.                        |
- +---------------------------------------------------------------------+ i18n+ / sa / 2
+ +=====================================================================+
+ |    _   _ _        _       _____ _                        _ _        |
+ |   | \ | (_)_ __  (_) __ _|  ___(_)_ __ _____      ____ _| | |       |
+ |   |  \| | | '_ \ | |/ _` | |_  | | '__/ _ \ \ /\ / / _` | | |       |
+ |   | |\  | | | | || | (_| |  _| | | | |  __/\ V  V / (_| | | |       |
+ |   |_| \_|_|_| |_|/ |\__,_|_|   |_|_|  \___| \_/\_/ \__,_|_|_|       |
+ |                |__/                                                 |
+ |  (c) NinTechNet Limited ~ https://nintechnet.com/                   |
+ +=====================================================================+
 */
 
-if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
+if (! defined( 'NFW_ENGINE_VERSION' ) ) {
+	die( 'Forbidden' );
+}
 
 // Daily report cronjob?
 if ( defined('NFREPORTDO') ) {
@@ -480,31 +476,22 @@ function nf_daily_report_log() {
 
 function nf_daily_report_email( $logstats ) {
 
-	$subject = __('[NinjaFirewall] Daily Activity Report', 'ninjafirewall');
+	/**
+	 * Home URL.
+	 */
 	if ( is_multisite() ) {
 		$url = network_home_url('/');
 	} else {
 		$url = home_url('/');
 	}
-	if ( preg_match( '`^https?://(.+)/`', $url, $match ) ) {
-		$subject .= " for {$match[1]}";
-	}
+	$host = parse_url( $url, PHP_URL_HOST );
 
-	$message = "\n". sprintf( __('Daily activity report for: %s', 'ninjafirewall'), $url) . "\n";
-	$message .= __('Date Range Processed: Yesterday', 'ninjafirewall') .", ". ucfirst( date('F j, Y',strtotime("-1 days")) ) ."\n\n";
+	$subject = [ $host ];
+	$content = [ $url, ucfirst( date('F j, Y',strtotime('-1 days') ) ),
+					$logstats[1] + $logstats[2] + $logstats[3],
+					$logstats[3], $logstats[2], $logstats[1], $logstats[0] ];
 
-	$message.= __('Blocked threats:', 'ninjafirewall') .' '.
-		($logstats[1] + $logstats[2] + $logstats[3]) .
-		' ('. __('critical:', 'ninjafirewall') .' '. $logstats[3] .', '.
-		__('high:', 'ninjafirewall') .' '. $logstats[2] .', '.
-		__('medium:', 'ninjafirewall') .' '. $logstats[1] . ")\n";
-
-	$message.= __('Blocked brute-force attacks:', 'ninjafirewall') .' '. $logstats[0] ."\n\n";
-	$message.= __('This notification can be turned off from NinjaFirewall "Event Notifications" page.', 'ninjafirewall') ."\n\n";
-	$message .= NF_PG_SIGNATURE ."\n\n";
-	$message .= NF_PG_MORESEC;
-
-	nfw_mail( $subject, $message, 'unsubscribe' );
+	NinjaFirewall_mail::send('daily_report', $subject, $content, '', [], 1 );
 }
 
 // ---------------------------------------------------------------------

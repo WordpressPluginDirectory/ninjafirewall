@@ -27,8 +27,8 @@ $nfw_['fw_starttime'] = nfw_fc_metrics('start');
 
 // Optional NinjaFirewall configuration file
 // ( see https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/ ) :
-if ( @file_exists($nfw_['file'] = dirname($_SERVER['DOCUMENT_ROOT']) .'/.htninja') ||
-	@file_exists($nfw_['file'] = $_SERVER['DOCUMENT_ROOT'] .'/.htninja') ) {
+if ( @is_file($nfw_['file'] = dirname($_SERVER['DOCUMENT_ROOT']) .'/.htninja') ||
+	@is_file($nfw_['file'] = $_SERVER['DOCUMENT_ROOT'] .'/.htninja') ) {
 	$nfw_['res'] = @include_once $nfw_['file'];
 	if ( $nfw_['res'] == 'ALLOW' ) {
 		if (! defined( 'NFW_UWL' ) ) {
@@ -83,7 +83,7 @@ if ( defined('NFWSESSION') ) {
 }
 
 // Get/set PID
-if ( file_exists( "{$nfw_['log_dir']}/cache/.pid" ) ) {
+if ( is_file( "{$nfw_['log_dir']}/cache/.pid" ) ) {
 	define( 'NFW_PID', file_get_contents( "{$nfw_['log_dir']}/cache/.pid" ) );
 }
 
@@ -124,8 +124,6 @@ if ( empty($nfw_['nfw_options']['enabled']) ) {
 	nfw_quit( 20 );
 	return;
 }
-
-include_once 'custom_firewall.php';
 
 // HTTP response headers
 if ( (! empty( $nfw_['nfw_options']['response_headers'] ) || ! empty($nfw_['nfw_options']['custom_headers']) )
@@ -212,7 +210,7 @@ if (! empty( NinjaFirewall_session::read('nfw_goodguy') ) ) {
 }
 define('NFW_SWL', 1);
 
-if ( file_exists($nfw_['log_dir'] .'/cache/livelogrun.php')) {
+if ( is_file($nfw_['log_dir'] .'/cache/livelogrun.php')) {
 	include_once 'fw_livelog.php';
 	fw_livelog_record();
 }
@@ -388,8 +386,8 @@ function nfw_connect() {
 	}
 
 	// DB
-	if (! file_exists( $wp_config ) ) {
-		if (! @file_exists( $wp_config = dirname( dirname($nfw_['wp_content']) ) . '/wp-config.php') ) {
+	if (! is_file( $wp_config ) ) {
+		if (! @is_file( $wp_config = dirname( dirname($nfw_['wp_content']) ) . '/wp-config.php') ) {
 			return 1;
 		}
 	}
@@ -1490,7 +1488,7 @@ function nfw_log($loginfo, $logdata, $loglevel, $ruleid) {
 	$stat_file = $nfw_['log_dir']. '/stats_' . $cur_month . '.php';
 	$log_file = $nfw_['log_dir']. '/firewall_' . $cur_month . '.php';
 
-	if ( file_exists( $stat_file ) ) {
+	if ( is_file( $stat_file ) ) {
 		$nfw_stat = file_get_contents( $stat_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
 		$nfw_stat = str_replace( '<?php exit; ?>', '', $nfw_stat );
 	} else {
@@ -1508,7 +1506,7 @@ function nfw_log($loginfo, $logdata, $loglevel, $ruleid) {
 		LOCK_EX
 	);
 
-	if (! file_exists($log_file) ) {
+	if (! is_file( $log_file ) ) {
 		$tmp = '<?php exit; ?>' . "\n";
 	} else {
 		$tmp = '';
@@ -1591,7 +1589,7 @@ function nfw_bfd($where) {
 	global $nfw_;
 	$bf_conf_dir = $nfw_['log_dir'] . '/cache';
 
-	if (! file_exists($bf_conf_dir . '/bf_conf.php') ) {
+	if (! is_file($bf_conf_dir . '/bf_conf.php') ) {
 		return;
 	}
 
@@ -1635,7 +1633,7 @@ function nfw_bfd($where) {
 	}
 
 
-	if ( file_exists($bf_conf_dir . '/bf_blocked' . $where . $_SERVER['SERVER_NAME'] . $bf_rand) ) {
+	if ( is_file($bf_conf_dir . '/bf_blocked' . $where . $_SERVER['SERVER_NAME'] . $bf_rand) ) {
 
 		$mtime = filemtime( $bf_conf_dir . '/bf_blocked' . $where . $_SERVER['SERVER_NAME'] . $bf_rand );
 		if ( ($now - $mtime) < $bf_bantime * 60 ) {
@@ -1654,7 +1652,7 @@ function nfw_bfd($where) {
 	}
 
 
-	if ( file_exists($bf_conf_dir . '/bf_' . $where . $_SERVER['SERVER_NAME'] . $bf_rand ) ) {
+	if ( is_file($bf_conf_dir . '/bf_' . $where . $_SERVER['SERVER_NAME'] . $bf_rand ) ) {
 		$tmp_log = file( $bf_conf_dir . '/bf_' . $where . $_SERVER['SERVER_NAME'] . $bf_rand, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
 		if ( count( $tmp_log) >= $bf_attempt ) {
 			if ( ($tmp_log[count($tmp_log) - 1] - $tmp_log[count($tmp_log) - $bf_attempt]) <= $bf_maxtime ) {
@@ -1841,7 +1839,7 @@ function nfw_get_captcha() {
 	$text_color = imagecolorallocate( $image, 77, 77, 77 );
 	// Font:
 	global $nfw_;
-	if ( file_exists( "{$nfw_['log_dir']}/font.ttf" ) ) {
+	if ( is_file( "{$nfw_['log_dir']}/font.ttf" ) ) {
 		imagettftext( $image, 35, 0, 15, 45, $text_color, "{$nfw_['log_dir']}/font.ttf", $captcha );
 	} else {
 		imagettftext( $image, 35, 0, 15, 45, $text_color, __DIR__ . '/share/font.ttf', $captcha );

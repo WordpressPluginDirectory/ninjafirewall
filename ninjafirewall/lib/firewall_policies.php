@@ -1375,14 +1375,21 @@ function nf_sub_policies_save() {
 		}
 	}
 
-	// Custom HTTP headers
-	$custom_headers = array();
+	/**
+	 * Custom HTTP headers.
+	 */
+	$custom_headers = [];
 	if (! empty( $_POST['nfw_options']['custom_headers'] ) ) {
 		$headers = explode( "\r\n", stripslashes( $_POST['nfw_options']['custom_headers'] ) );
 		if (! empty( $headers[0] ) ) {
 			foreach( $headers as $header ) {
-				list( $key, $value ) = explode( ':', "$header:" );
-				// Lowercase key name
+				if ( empty( $header ) || strpos( $header, ':') === false ) {
+					continue;
+				}
+				list( $key, $value ) = explode(':', $header, 2 );
+				/**
+				 * Lowercase key name.
+				 */
 				$key		= strtolower( trim( $key ) );
 				$value	= trim( $value );
 				if (! empty( $key ) && ! empty( $value ) ) {

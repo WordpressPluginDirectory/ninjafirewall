@@ -1,23 +1,19 @@
 <?php
 /*
- +---------------------------------------------------------------------+
- | NinjaFirewall (WP Edition)                                          |
- |                                                                     |
- | (c) NinTechNet - https://nintechnet.com/                            |
- +---------------------------------------------------------------------+
- | This program is free software: you can redistribute it and/or       |
- | modify it under the terms of the GNU General Public License as      |
- | published by the Free Software Foundation, either version 3 of      |
- | the License, or (at your option) any later version.                 |
- |                                                                     |
- | This program is distributed in the hope that it will be useful,     |
- | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
- | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
- | GNU General Public License for more details.                        |
- +---------------------------------------------------------------------+ i18n+ / sa / 2
+ +=====================================================================+
+ |    _   _ _        _       _____ _                        _ _        |
+ |   | \ | (_)_ __  (_) __ _|  ___(_)_ __ _____      ____ _| | |       |
+ |   |  \| | | '_ \ | |/ _` | |_  | | '__/ _ \ \ /\ / / _` | | |       |
+ |   | |\  | | | | || | (_| |  _| | | | |  __/\ V  V / (_| | | |       |
+ |   |_| \_|_|_| |_|/ |\__,_|_|   |_|_|  \___| \_/\_/ \__,_|_|_|       |
+ |                |__/                                                 |
+ |  (c) NinTechNet Limited ~ https://nintechnet.com/                   |
+ +=====================================================================+
 */
 
-if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
+if (! defined('NFW_ENGINE_VERSION') ) {
+	die('Forbidden');
+}
 
 // ---------------------------------------------------------------------
 // This function is called by NinjaFirewall's garbage collector
@@ -141,22 +137,13 @@ function nfw_check_security_updates() {
 // ---------------------------------------------------------------------
 // Send an email alert to the admin
 
-function nfw_alert_security_updates( $found = array() ) {
+function nfw_alert_security_updates( $found = [] ) {
 
-	$nfw_options = nfw_get_option('nfw_options');
+	$message = '';
 
-	$subject = __('[NinjaFirewall] Warning: Security update available', 'ninjafirewall');
-
-	$message = __('NinjaFirewall has detected that there are security updates available for your website:', 'ninjafirewall') . "\n\n".
-		__('Date:', 'ninjafirewall') .' '. ucfirst( date_i18n('F j, Y @ H:i:s T') ) . "\n";
-
-	if ( is_multisite() ) {
-		$message .= sprintf( __('Blog: %s', 'ninjafirewall'), network_home_url('/') ) ."\n\n";
-	} else {
-		$message .= sprintf( __('Blog: %s', 'ninjafirewall'), home_url('/') ) ."\n\n";
-	}
-
-	// WordPress
+	/**
+	 * WordPress.
+	 */
 	if (! empty( $found['wordpress'] ) ) {
 		$message .= "WordPress:\n" .
 			sprintf( __('Your version: %s', 'ninjafirewall'), $found['wordpress']['cur_version'] ) ."\n".
@@ -169,7 +156,9 @@ function nfw_alert_security_updates( $found = array() ) {
 		$message .= "\n";
 	}
 
-	// Plugins
+	/**
+	 * Plugins.
+	 */
 	if (! empty( $found['plugins'] ) ) {
 		foreach( $found['plugins'] as $k => $v ) {
 			$message .= sprintf( __('Plugin: %s', 'ninjafirewall'), $found['plugins'][$k]['name'] ) ."\n".
@@ -185,7 +174,9 @@ function nfw_alert_security_updates( $found = array() ) {
 		}
 	}
 
-	// Themes
+	/**
+	 * Themes.
+	 */
 	if (! empty( $found['themes'] ) ) {
 
 		foreach( $found['themes'] as $k => $v ) {
@@ -202,12 +193,20 @@ function nfw_alert_security_updates( $found = array() ) {
 		}
 	}
 
-	$message .= __("Don't leave your blog at risk, make sure to update as soon as possible.", 'ninjafirewall') .
-		"\n\n";
-	$message.= __('This notification can be turned off from NinjaFirewall "Event Notifications" page.', 'ninjafirewall') . "\n\n";
-	$message .=	NF_PG_SIGNATURE ."\n\n";
-	$message .= NF_PG_MORESEC;
-	nfw_mail( $subject, $message, 'unsubscribe');
+	if ( is_multisite() ) {
+		$url = network_home_url('/');
+	} else {
+		$url = home_url('/');
+	}
+
+	/**
+	 * Email notification.
+	 */
+	$subject = [];
+	$content = [ ucfirst( date_i18n('F j, Y @ H:i:s T') ), $url, $message ];
+
+	NinjaFirewall_mail::send('security_updates', $subject, $content, '', [], 1 );
+
 
 }
 
