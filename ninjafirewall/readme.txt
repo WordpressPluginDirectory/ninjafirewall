@@ -2,8 +2,8 @@
 Contributors: nintechnet, bruandet
 Tags: security, firewall, malware, virus, protection
 Requires at least: 4.9
-Tested up to: 6.7
-Stable tag: 4.7.2
+Tested up to: 6.8
+Stable tag: 4.7.4
 Requires PHP: 7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -207,6 +207,17 @@ WordPress Sicherheit Plugin.
 == Changelog ==
 
 Need more security? Take the time to explore our supercharged Premium edition: [NinjaFirewall WP+ Edition](https://nintechnet.com/ninjafirewall/wp-edition/?comparison)
+
+= 4.7.4 =
+
+* Fixed a bug where, in some cases, NinjaFirewall's email notifications were not sent to all recipients but only to the first one in the list.
+* Updated Charts.js.
+* WP+ Edition (Premium): Updated geolocation databases.
+* Small fixes and adjustments.
+
+= 4.7.3 =
+
+* Fixed the "[NinjaFirewall]" subject tag line that was missing in all email notifications.
 
 = 4.7.2 =
 

@@ -462,18 +462,26 @@ if (! empty( $_POST['delete-error-log'] ) ){
 			}
 		}
 
-		$doc_root = rtrim($_SERVER['DOCUMENT_ROOT'], '/');
-		if ( @file_exists( $file = dirname( $doc_root ) . '/.htninja') ||
-			@file_exists( $file = $doc_root . '/.htninja') ) {
-			echo '<tr><th scope="row" class="row-med">' . __('Optional configuration file', 'ninjafirewall') . '</th>
-			<td><code>' .  htmlentities($file) . '</code></td>
-			</tr>';
+		/**
+		 * Check for NinjaFirewall optional config file.
+		 */
+		$doc_root = rtrim( $_SERVER['DOCUMENT_ROOT'], '/');
+		if ( @file_exists( $file = $doc_root . '/.htninja') ||
+			@file_exists( $file = dirname( $doc_root ) . '/.htninja') ) {
 
-			// Check if we have a MySQLi link identifier defined in the .htninja
+			echo '<tr>
+				<th scope="row" class="row-med">'. esc_html__('Optional configuration file',
+				'ninjafirewall') .'</th><td><code>'. htmlentities( $file ) .'</code></td>
+			</tr>';
+			/**
+			 * Check if we have a MySQLi link identifier defined in the .htninja.
+			 */
 			if (! empty( $GLOBALS['nfw_mysqli'] ) && ! empty( $GLOBALS['nfw_table_prefix'] ) ) {
 				echo '<tr>
-				<th scope="row" class="row-med">' . __('MySQLi link identifier', 'ninjafirewall') . '</th>
-				<td>' . __('A MySQLi link identifier was detected in your <code>.htninja</code>.', 'ninjafirewall') . '</td>
+					<th scope="row" class="row-med">'. esc_html__('MySQLi link identifier',
+					'ninjafirewall') .'</th><td>' .
+					esc_html__('A MySQLi link identifier was detected in your <code>.htninja</code>.',
+					'ninjafirewall') . '</td>
 				</tr>';
 			}
 		}

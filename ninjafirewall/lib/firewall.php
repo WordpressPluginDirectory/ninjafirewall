@@ -25,19 +25,28 @@ if ( defined('WP_CLI') && WP_CLI && PHP_SAPI === 'cli' ) {
 $nfw_ = [];
 $nfw_['fw_starttime'] = nfw_fc_metrics('start');
 
-// Optional NinjaFirewall configuration file
-// ( see https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/ ) :
-if ( @is_file($nfw_['file'] = dirname($_SERVER['DOCUMENT_ROOT']) .'/.htninja') ||
-	@is_file($nfw_['file'] = $_SERVER['DOCUMENT_ROOT'] .'/.htninja') ) {
+/**
+ * Optional NinjaFirewall configuration file.
+ * See https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/
+ */
+if ( @is_file( $nfw_['file'] = $_SERVER['DOCUMENT_ROOT'] .'/.htninja') ||
+	@is_file( $nfw_['file'] = dirname( $_SERVER['DOCUMENT_ROOT'] ) .'/.htninja') ) {
+
 	$nfw_['res'] = @include_once $nfw_['file'];
-	if ( $nfw_['res'] == 'ALLOW' ) {
-		if (! defined( 'NFW_UWL' ) ) {
-			define('NFW_UWL', true);
+	/**
+	 * Allow and stop filtering.
+	 */
+	if ( $nfw_['res'] == 'ALLOW') {
+		if (! defined('NFW_UWL') ) {
+			define('NFW_UWL', true );
 		}
 		nfw_quit( 20 );
 		return;
 	}
-	if ( $nfw_['res'] == 'BLOCK' ) {
+	/**
+	 * Reject immediately.
+	 */
+	if ( $nfw_['res'] == 'BLOCK') {
 		header('HTTP/1.1 403 Forbidden');
 		header('Status: 403 Forbidden');
 		header('Pragma: no-cache');

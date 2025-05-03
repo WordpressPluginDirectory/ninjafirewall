@@ -73,7 +73,8 @@ class NinjaFirewall_mail {
 			return;
 		}
 
-		$subject = vsprintf( self::$template[$tpl]['subject'], $s_values );
+		$subject = self::$template['subject_line_tag'] .' '.
+					vsprintf( self::$template[$tpl]['subject'], $s_values );
 		$message = vsprintf( self::$template[$tpl]['content'], $c_values ) .
 					"\n\n". self::$template['signature'];
 
@@ -83,27 +84,31 @@ class NinjaFirewall_mail {
 		if (! empty( $unsubscribe ) ) {
 			require_once __DIR__ .'/email_sodium.php';
 			$unsubscribe = nfw_check_sodium();
-		}
 
-		if (! empty( $unsubscribe ) ) {
 			/**
 			 * Link will be valid for 12 hours.
 			 */
 			$expire = time() + 60 * 60 * 12;
-			$admin_email = get_option('admin_email');
-			/**
-			 * We need to create a unique unsubscribe link for each recipients.
-			 */
-			$recipients = explode(',', $recipient );
-			foreach( $recipients as $to ) {
-				$to = trim( $to );
-				/**
-				 * If that's the admin email, we can't remove it.
-				 */
-				if ( $to == $admin_email ) {
-					$click = '';
+		}
 
-				} else {
+		$admin_email = get_option('admin_email');
+
+		/**
+		 * Look for all recipients.
+		 */
+		$recipients = explode(',', $recipient );
+
+		foreach( $recipients as $to ) {
+			$to = trim( $to );
+			/**
+			 * Add an unsubscribe link if required.
+			 */
+			$click = '';
+			if (! empty( $unsubscribe ) ) {
+				/**
+				* Must no be the admin email, because we can't remove it.
+				*/
+				if ( $to != $admin_email ) {
 					$link		= nfw_sodium_encrypt( $to, $expire, $unsubscribe );
 					$uri		= home_url('/') ."?nfw_stop_notification=$link";
 					$click	= "\n\n". sprintf(
@@ -112,30 +117,14 @@ class NinjaFirewall_mail {
 						$uri
 					);
 				}
-				$res = wp_mail( $to, $subject, $message . $click, $headers, $attachment );
-				if ( $res === false ) {
-					nfw_log_error( sprintf(
-						/* Translators: 1=subject, 2=recipient */
-						__('Cannot send email "%1$s" to recipient "%2$s"', 'ninjafirewall'),
-						$to, $subject
-					) );
-				}
-				/**
-				 * Delete attachment.
-				 */
-				if ( $attachment && is_file( $attachment ) ) {
-					unlink( $attachment );
-				}
-				return $res;
 			}
 
-		} else {
-			$res = wp_mail( $recipient, $subject, $message, $headers, $attachment );
+			$res = wp_mail( $to, $subject, $message . $click, $headers, $attachment );
 			if ( $res === false ) {
 				nfw_log_error( sprintf(
 					/* Translators: 1=subject, 2=recipient */
 					__('Cannot send email "%1$s" to recipient "%2$s"', 'ninjafirewall'),
-					$recipient, $subject
+					$subject, $to
 				) );
 			}
 			/**
@@ -144,8 +133,8 @@ class NinjaFirewall_mail {
 			if ( $attachment && is_file( $attachment ) ) {
 				unlink( $attachment );
 			}
-			return $res;
 		}
+		return $res;
 	}
 
 
@@ -168,7 +157,8 @@ class NinjaFirewall_mail {
 		 */
 		self::initialize('firewall', $logdir);
 
-		$subject = vsprintf( self::$template[$tpl]['subject'], $s_values );
+		$subject = self::$template['subject_line_tag'] .' '.
+					vsprintf( self::$template[$tpl]['subject'], $s_values );
 		$message = vsprintf( self::$template[$tpl]['content'], $c_values ) .
 					"\n\n". self::$template['signature'];
 
