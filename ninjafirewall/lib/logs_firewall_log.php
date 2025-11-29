@@ -31,7 +31,7 @@ if (! empty( $tz ) ) {
 $log_dir = NFW_LOG_DIR . '/nfwlog/';
 $monthly_log = 'firewall_' . date( 'Y-m' ) . '.php';
 
-if ( ! file_exists( $log_dir . $monthly_log ) ) {
+if ( ! is_file( $log_dir . $monthly_log ) ) {
 	nf_sub_log_create( $log_dir . $monthly_log );
 }
 
@@ -288,7 +288,7 @@ function nf_sub_log_read_local( $log, $log_dir, $max_lines ) {
 	$data = array();
 	$data['type'] = 'local';
 
-	if (! file_exists( $log_dir . $log ) ) {
+	if (! is_file( $log_dir . $log ) ) {
 		$data['err_msg'] = __('The requested log does not exist.', 'ninjafirewall');
 		return $data;
 	}

@@ -119,6 +119,7 @@ if (! empty( $_POST['delete-error-log'] ) ){
 ?>
 <div class="wrap">
 	<h1><img style="vertical-align:top;width:33px;height:33px;" src="<?php echo plugins_url( '/ninjafirewall/images/ninjafirewall_32.png') ?>">&nbsp;<?php _e('NinjaFirewall (WP Edition)', 'ninjafirewall') ?></h1>
+
 	<?php
 
 	// Display a one-time notice after two weeks of use
@@ -134,31 +135,10 @@ if (! empty( $_POST['delete-error-log'] ) ){
 		<a id="tab-dashboard" class="nav-tab<?php echo $dashboard_tab ?>" onClick="nfwjs_switch_tabs('dashboard', 'dashboard:statistics:about')"><?php _e( 'Dashboard', 'ninjafirewall' ) ?></a>
 		<a id="tab-statistics" class="nav-tab<?php echo $statistics_tab ?>" href="?page=NinjaFirewall&tab=statistics"><?php _e( 'Statistics', 'ninjafirewall' ) ?></a>
 		<a id="tab-about" class="nav-tab<?php echo $about_tab ?>" onClick="nfwjs_switch_tabs('about', 'dashboard:statistics:about')"><?php _e( 'About...', 'ninjafirewall' ) ?></a>
+		<?php nfw_contextual_help() ?>
 	</h2>
-	<br />
 
-	<?php
-	// One-time notice:
-	if ( isset( $nfw_options['welcome'] ) ) {
-	?>
-	<div id="nfw-welcome">
-		<table class="form-table nfw-table" style="background:#fff">
-			<tr>
-				<td style="padding:20px;text-align:center;vertical-align:middle;width:50%">
-					<h3><?php _e('Thank you for using NinjaFirewall.', 'ninjafirewall' )?></h3>
-					<p style="font-size: 1.1em;"><?php printf( __('Every page of NinjaFirewall has a contextual help: whenever you need help about an option or feature, click on the %s tab located in the upper right corner of the corresponding page.', 'ninjafirewall' ), '<strong style="border:1px solid #ccc;padding:2px">'. __('Help') .'</strong>' ) ?></p>
-					<br />
-					<p><input type="button" class="button-primary" value="<?php _e('Got it!', 'ninjafirewall' )?>" onClick="nfwjs_welcomeajax('<?php echo wp_create_nonce('welcome_save') ?>');nfwjs_up_down('nfw-welcome');" /></p>
-				</td>
-				<td style="padding:20px;text-align:center;vertical-align:middle;width:50%">
-					<img class="wpplus img-fluid" src="<?php echo plugins_url( '/ninjafirewall/images/welcome.png') ?>" />
-				</td>
-			</tr>
-		</table>
-	</div>
-	<?php
-	}
-	?>
+	<br />
 
 	<!-- Dashboard -->
 
@@ -166,332 +146,338 @@ if (! empty( $_POST['delete-error-log'] ) ){
 
 		<h3><?php _e('Firewall Dashboard', 'ninjafirewall') ?></h3>
 
-		<table class="form-table nfw-table">
-
-		<?php
-		if ( NF_DISABLED ) {
-			// An instance of the firewall running in Full WAF (or Pro/Pro+ Edition)
-			// in a parent directory will force us to run in Full WAF mode to override it.
-			if ( defined( 'NFW_STATUS' ) && ( NFW_STATUS > 19 && NFW_STATUS < 24 ) ) {
-				$msg = __('It seems that you may have another instance of NinjaFirewall running in a parent directory. Make sure to follow these instructions:', 'ninjafirewall');
-				$msg.= '<ol><li>';
-				$msg.= __('Temporarily disable the firewall in the parent folder by renaming its PHP INI or .htaccess file.', 'ninjafirewall');
-				$msg.= '</li><li>';
-				$msg.= __('Install NinjaFirewall on this site in Full WAF mode.', 'ninjafirewall');
-				$msg.= '</li><li>';
-				$msg.= __('Restore the PHP INI or .htaccess in the parent folder to re-enable the firewall.', 'ninjafirewall');
-				$msg.= '</li></ol>';
-
-			} elseif (! empty( $GLOBALS['err_fw'][NF_DISABLED] ) ) {
-				$msg = $GLOBALS['err_fw'][NF_DISABLED];
-			} else {
-				$msg = __('Unknown error', 'ninjafirewall') .' #'. NF_DISABLED;
-			}
-		?>
+		<table>
 			<tr>
-				<th scope="row" class="row-med"><?php _e('Firewall', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php echo $msg ?></td>
-			</tr>
-
-		<?php
-		} else {
-		?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Firewall', 'ninjafirewall') ?></th>
-				<td><?php _e('Enabled', 'ninjafirewall') ?></td>
-			</tr>
-		<?php
-		}
-
-		?>
-			<tr>
-				<th scope="row" class="row-med"><?php esc_html_e('Mode', 'ninjafirewall') ?></th>
 				<td>
-				<?php
-				if ( defined( 'NFW_WPWAF' ) ) {
-					printf( esc_html__('NinjaFirewall is running in %s mode. For better protection, activate its Full WAF mode:', 'ninjafirewall'), '<a href="https://blog.nintechnet.com/full_waf-vs-wordpress_waf/" target="_blank">WordPress WAF</a>');
-					?>
-					<p><input type="button" id="nfw-activate-thickbox" value="<?php esc_attr_e('Activate Full WAF mode', 'ninjafirewall') ?>" class="button-secondary"></p>
+					<table class="form-table nfw-table">
+
 					<?php
-				} else {
-					if (! NF_DISABLED ) {
-						printf( esc_html__('NinjaFirewall is running in %s mode.', 'ninjafirewall'), '<a href="https://blog.nintechnet.com/full_waf-vs-wordpress_waf/" target="_blank">Full WAF</a>');
+					if ( NF_DISABLED ) {
+						// An instance of the firewall running in Full WAF (or Pro/Pro+ Edition)
+						// in a parent directory will force us to run in Full WAF mode to override it.
+						if ( defined( 'NFW_STATUS' ) && ( NFW_STATUS > 19 && NFW_STATUS < 24 ) ) {
+							$msg = __('It seems that you may have another instance of NinjaFirewall running in a parent directory. Make sure to follow these instructions:', 'ninjafirewall');
+							$msg.= '<ol><li>';
+							$msg.= __('Temporarily disable the firewall in the parent folder by renaming its PHP INI or .htaccess file.', 'ninjafirewall');
+							$msg.= '</li><li>';
+							$msg.= __('Install NinjaFirewall on this site in Full WAF mode.', 'ninjafirewall');
+							$msg.= '</li><li>';
+							$msg.= __('Restore the PHP INI or .htaccess in the parent folder to re-enable the firewall.', 'ninjafirewall');
+							$msg.= '</li></ol>';
+
+						} elseif (! empty( $GLOBALS['err_fw'][NF_DISABLED] ) ) {
+							$msg = $GLOBALS['err_fw'][NF_DISABLED];
+						} else {
+							$msg = __('Unknown error', 'ninjafirewall') .' #'. NF_DISABLED;
+						}
+					?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Firewall', 'ninjafirewall') ?></th>
+							<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php echo $msg ?></td>
+						</tr>
+
+					<?php
+					} else {
+					?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Firewall', 'ninjafirewall') ?></th>
+							<td><?php _e('Enabled', 'ninjafirewall') ?></td>
+						</tr>
+					<?php
+					}
+
+					?>
+						<tr>
+							<th scope="row" class="row-med"><?php esc_html_e('Mode', 'ninjafirewall') ?></th>
+							<td>
+							<?php
+							if ( defined( 'NFW_WPWAF' ) ) {
+								printf( esc_html__('NinjaFirewall is running in %s mode. For better protection, activate its Full WAF mode:', 'ninjafirewall'), '<a href="https://blog.nintechnet.com/full_waf-vs-wordpress_waf/" target="_blank">WordPress WAF</a>');
+								?>
+								<p><input type="button" id="nfw-activate-thickbox" value="<?php esc_attr_e('Activate Full WAF mode', 'ninjafirewall') ?>" class="button-secondary"></p>
+								<?php
+							} else {
+								if (! NF_DISABLED ) {
+									printf( esc_html__('NinjaFirewall is running in %s mode.', 'ninjafirewall'), '<a href="https://blog.nintechnet.com/full_waf-vs-wordpress_waf/" target="_blank">Full WAF</a>');
+									?>
+									<p><input type="button" id="nfw-configure-thickbox" value="<?php esc_attr_e('Configure', 'ninjafirewall') ?>" class="button-secondary"></p>
+									<?php
+								} else {
+									echo '-';
+								}
+							}
+							?>
+							</td>
+						</tr>
+					<?php
+
+					if (! empty( $nfw_options['debug'] ) ) {
+					?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Debugging mode', 'ninjafirewall') ?></th>
+							<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php _e('Enabled.', 'ninjafirewall') ?>&nbsp;<a href="?page=nfsubopt"><?php _e('Click here to turn Debugging Mode off', 'ninjafirewall') ?></a></td>
+						</tr>
+					<?php
+					}
+					?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Edition', 'ninjafirewall') ?></th>
+							<td>WP Edition ~ <a href="?page=nfsubwplus"><?php _e('Need more security? Explore our supercharged premium version: NinjaFirewall (WP+ Edition)', 'ninjafirewall' ) ?></a></td>
+						</tr>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Version', 'ninjafirewall') ?></th>
+							<td><?php echo NFW_ENGINE_VERSION . ' ~ ' . __('Security rules:', 'ninjafirewall' ) . ' ' . preg_replace('/(\d{4})(\d\d)(\d\d)/', '$1-$2-$3', $nfw_options['rules_version']) ?></td>
+						</tr>
+
+						<tr>
+							<th scope="row" class="row-med"><?php _e('PHP SAPI', 'ninjafirewall') ?></th>
+							<td>
+								<?php
+								if ( defined('HHVM_VERSION') ) {
+									echo 'HHVM';
+								} else {
+									echo strtoupper(PHP_SAPI);
+								}
+								echo ' ~ '. PHP_MAJOR_VERSION .'.'. PHP_MINOR_VERSION .'.'. PHP_RELEASE_VERSION;
+								?>
+							</td>
+						</tr>
+					<?php
+
+					// If security rules updates are disabled, warn the user
+					if ( empty( $nfw_options['enable_updates'] ) ) {
 						?>
-						<p><input type="button" id="nfw-configure-thickbox" value="<?php esc_attr_e('Configure', 'ninjafirewall') ?>" class="button-secondary"></p>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Updates', 'ninjafirewall') ?></th>
+							<td><span class="dashicons dashicons-dismiss nfw-danger"></span><a href="?page=nfsubupdates&tab=updates"><?php _e( 'Security rules updates are disabled.', 'ninjafirewall' ) ?></a> <?php _e( 'If you want your blog to be protected against the latest threats, enable automatic security rules updates.', 'ninjafirewall' ) ?></td>
+						</tr>
+						<?php
+					}
+
+					if ( empty( NinjaFirewall_session::read('nfw_goodguy') ) ) {
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Admin user', 'ninjafirewall') ?></th>
+							<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('You are not whitelisted. Ensure that the "Do not block WordPress administrator" option is enabled in the <a href="%s">Firewall Policies</a> menu, otherwise you could get blocked by the firewall while working from your administration dashboard.', 'ninjafirewall'), '?page=nfsubpolicies') ?></td>
+						</tr>
+					<?php
+					} else {
+						$current_user = wp_get_current_user();
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Admin user', 'ninjafirewall') ?></th>
+							<td><code><?php echo htmlspecialchars( $current_user->user_login ) ?></code>: <?php _e('You are whitelisted by the firewall.', 'ninjafirewall') ?></td>
+						</tr>
+					<?php
+					}
+					if ( defined('NFW_ALLOWED_ADMIN') && ! is_multisite() ) {
+					?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Restrictions', 'ninjafirewall') ?></th>
+							<td><?php _e('Access to NinjaFirewall is restricted to specific users.', 'ninjafirewall') ?></td>
+						</tr>
+					<?php
+					}
+
+					// Try to find out if there is any "lost" session between the firewall
+					// and the plugin part of NinjaFirewall (could be a buggy plugin killing
+					// the session etc), unless we just installed it
+					if ( defined( 'NFW_SWL' ) && ! empty( NinjaFirewall_session::read('nfw_goodguy') ) && empty( $_REQUEST['nfw_firstrun'] ) ) {
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php esc_html_e('User session', 'ninjafirewall') ?></th>
+							<td><span class="dashicons dashicons-warning nfw-warning"></span><?php esc_html_e('It seems that the user session set by NinjaFirewall was not found by the firewall script.', 'ninjafirewall') ?></td>
+						</tr>
 						<?php
 					} else {
-						echo '-';
-					}
-				}
-				?>
-				</td>
-			</tr>
-		<?php
-
-		if (! empty( $nfw_options['debug'] ) ) {
-		?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Debugging mode', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php _e('Enabled.', 'ninjafirewall') ?>&nbsp;<a href="?page=nfsubopt"><?php _e('Click here to turn Debugging Mode off', 'ninjafirewall') ?></a></td>
-			</tr>
-		<?php
-		}
-		?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Edition', 'ninjafirewall') ?></th>
-				<td>WP Edition ~ <a href="?page=nfsubwplus"><?php _e('Need more security? Explore our supercharged premium version: NinjaFirewall (WP+ Edition)', 'ninjafirewall' ) ?></a></td>
-			</tr>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Version', 'ninjafirewall') ?></th>
-				<td><?php echo NFW_ENGINE_VERSION . ' ~ ' . __('Security rules:', 'ninjafirewall' ) . ' ' . preg_replace('/(\d{4})(\d\d)(\d\d)/', '$1-$2-$3', $nfw_options['rules_version']) ?></td>
-			</tr>
-
-			<tr>
-				<th scope="row" class="row-med"><?php _e('PHP SAPI', 'ninjafirewall') ?></th>
-				<td>
-					<?php
-					if ( defined('HHVM_VERSION') ) {
-						echo 'HHVM';
-					} else {
-						echo strtoupper(PHP_SAPI);
-					}
-					echo ' ~ '. PHP_MAJOR_VERSION .'.'. PHP_MINOR_VERSION .'.'. PHP_RELEASE_VERSION;
-					?>
-				</td>
-			</tr>
-		<?php
-
-		// If security rules updates are disabled, warn the user
-		if ( empty( $nfw_options['enable_updates'] ) ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Updates', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-dismiss nfw-danger"></span><a href="?page=nfsubupdates&tab=updates"><?php _e( 'Security rules updates are disabled.', 'ninjafirewall' ) ?></a> <?php _e( 'If you want your blog to be protected against the latest threats, enable automatic security rules updates.', 'ninjafirewall' ) ?></td>
-			</tr>
-			<?php
-		}
-
-		if ( empty( NinjaFirewall_session::read('nfw_goodguy') ) ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Admin user', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('You are not whitelisted. Ensure that the "Do not block WordPress administrator" option is enabled in the <a href="%s">Firewall Policies</a> menu, otherwise you could get blocked by the firewall while working from your administration dashboard.', 'ninjafirewall'), '?page=nfsubpolicies') ?></td>
-			</tr>
-		<?php
-		} else {
-			$current_user = wp_get_current_user();
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Admin user', 'ninjafirewall') ?></th>
-				<td><code><?php echo htmlspecialchars( $current_user->user_login ) ?></code>: <?php _e('You are whitelisted by the firewall.', 'ninjafirewall') ?></td>
-			</tr>
-		<?php
-		}
-		if ( defined('NFW_ALLOWED_ADMIN') && ! is_multisite() ) {
-		?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Restrictions', 'ninjafirewall') ?></th>
-				<td><?php _e('Access to NinjaFirewall is restricted to specific users.', 'ninjafirewall') ?></td>
-			</tr>
-		<?php
-		}
-
-		// Try to find out if there is any "lost" session between the firewall
-		// and the plugin part of NinjaFirewall (could be a buggy plugin killing
-		// the session etc), unless we just installed it
-		if ( defined( 'NFW_SWL' ) && ! empty( NinjaFirewall_session::read('nfw_goodguy') ) && empty( $_REQUEST['nfw_firstrun'] ) ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php esc_html_e('User session', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-warning nfw-warning"></span><?php esc_html_e('It seems that the user session set by NinjaFirewall was not found by the firewall script.', 'ninjafirewall') ?></td>
-			</tr>
-			<?php
-		} else {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php esc_html_e('User session', 'ninjafirewall') ?></th>
-				<?php
-				if ( defined('NFWSESSION') ) {
-					?>
-					<td><?php
-						printf(
-							/* Translators: <a> and </a> anchor tags */
-							esc_html__('You are using NinjaFirewall sessions. If you want to switch to PHP sessions, please %sconsult our blog%s.', 'ninjafirewall'),
-							'<a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/#user_session" target="_blank" rel="noreferrer noopener">', '</a>'
+						/**
+						 * Don't display info about the session if we're using the NinjaFirewall's built-in session.
+						 */
+						if ( is_file( NFW_LOG_DIR .'/nfwlog/phpsession') ) {
+							?>
+							<tr>
+								<th scope="row" class="row-med"><?php esc_html_e('User session', 'ninjafirewall') ?></th>
+								<td><?php
+									printf(
+							/* Translators: path to the file */
+							esc_html__('You are using PHP sessions. If you want to switch to NinjaFirewall sessions, please delete the following file: %s.', 'nfwplus'),
+								'<code>'. esc_html( NFW_LOG_DIR .'/nfwlog/phpsession') .'</code>'
 						); ?>
-					</td>
+								</td>
+							</tr>
+						<?php
+						}
+					}
+
+					if ( ! empty( $nfw_options['clogs_pubkey'] ) ) {
+						$err_msg = $ok_msg = '';
+						if (! preg_match( '/^[a-f0-9]{40}:([a-f0-9:.]{3,39}|\*)$/', $nfw_options['clogs_pubkey'], $match ) ) {
+							$err_msg = sprintf( __('the public key is invalid. Please <a href="%s">check your configuration</a>.', 'ninjafirewall'), '?page=nfsublog#clogs');
+
+						} else {
+							if ( $match[1] == '*' ) {
+								$ok_msg = __( "No IP address restriction.", 'ninjafirewall');
+
+							} elseif ( filter_var( $match[1], FILTER_VALIDATE_IP ) ) {
+								$ok_msg = sprintf( __("IP address %s is allowed to access NinjaFirewall's log on this server.", 'ninjafirewall'), htmlspecialchars( $match[1]) );
+
+							} else {
+								$err_msg = sprintf( __('the whitelisted IP is not valid. Please <a href="%s">check your configuration</a>.', 'ninjafirewall'), '?page=nfsublog#clogs');
+							}
+						}
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Centralized Logging', 'ninjafirewall') ?></th>
+						<?php
+						if ( $err_msg ) {
+							?>
+								<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( __('Error: %s', 'ninjafirewall'), $err_msg) ?></td>
+							</tr>
+							<?php
+							$err_msg = '';
+						} else {
+							?>
+								<td><a href="?page=nfsublog#clogs"><?php _e('Enabled', 'ninjafirewall'); echo "</a>. $ok_msg"; ?></td>
+							</tr>
+						<?php
+						}
+					}
+
+					if (! filter_var(NFW_REMOTE_ADDR, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) ) {
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Source IP', 'ninjafirewall') ?> <span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can use the IP Access Control section to easily configure all IP address related options (source, whitelist, blacklist, rate limiting etc).', 'ninjafirewall' ) ?>"></span></th>
+							<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('You have a private IP : %s', 'ninjafirewall') .'<br />'. __('If your site is behind a reverse proxy or a load balancer, ensure that you have setup your HTTP server or PHP to forward the correct visitor IP, otherwise use the NinjaFirewall %s configuration file.', 'ninjafirewall'), htmlentities(NFW_REMOTE_ADDR), '<code><a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/">.htninja</a></code>') ?></td>
+						</tr>
+						<?php
+					}
+					if (! empty( $_SERVER["HTTP_CF_CONNECTING_IP"] ) ) {
+						if ( NFW_REMOTE_ADDR != $_SERVER["HTTP_CF_CONNECTING_IP"] ) {
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('CDN detection', 'ninjafirewall') ?> <span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can use the IP Access Control section to easily configure all IP address related options (source, whitelist, blacklist, rate limiting etc).', 'ninjafirewall' ) ?>"></span></th>
+							<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('%s detected: you seem to be using Cloudflare CDN services. Ensure that you have setup your HTTP server or PHP to forward the correct visitor IP, otherwise use the NinjaFirewall %s configuration file.', 'ninjafirewall'), '<code>HTTP_CF_CONNECTING_IP</code>', '<code><a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/">.htninja</a></code>') ?></td>
+						</tr>
+						<?php
+						}
+					}
+					if (! empty( $_SERVER["HTTP_INCAP_CLIENT_IP"] ) ) {
+						if ( NFW_REMOTE_ADDR != $_SERVER["HTTP_INCAP_CLIENT_IP"] ) {
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('CDN detection', 'ninjafirewall') ?> <span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can use the IP Access Control section to easily configure all IP address related options (source, whitelist, blacklist, rate limiting etc).', 'ninjafirewall' ) ?>"></span></th>
+							<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('%s detected: you seem to be using Incapsula CDN services. Ensure that you have setup your HTTP server or PHP to forward the correct visitor IP, otherwise use the NinjaFirewall %s configuration file.', 'ninjafirewall'), '<code>HTTP_INCAP_CLIENT_IP</code>', '<code><a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/">.htninja</a></code>') ?></td>
+						</tr>
+						<?php
+						}
+					}
+
+					if (! is_writable( NFW_LOG_DIR . '/nfwlog' ) ) {
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Log dir', 'ninjafirewall') ?></th>
+							<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( __('%s directory is not writable! Please chmod it to 0777 or equivalent.', 'ninjafirewall'), '<code>'. htmlspecialchars(NFW_LOG_DIR) .'/nfwlog/</code>') ?></td>
+						</tr>
 					<?php
-				} else {
+					}
+
+					if (! is_writable( NFW_LOG_DIR . '/nfwlog/cache') ) {
+						?>
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Log dir', 'ninjafirewall') ?></th>
+							<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf(__('%s directory is not writable! Please chmod it to 0777 or equivalent.', 'ninjafirewall'), '<code>'. htmlspecialchars(NFW_LOG_DIR) . '/nfwlog/cache/</code>') ?></td>
+						</tr>
+					<?php
+					}
+
+
+					if (! defined('NF_DISABLE_PHPINICHECK') && ! defined('NFW_WPWAF') ) {
+
+						// Make sure the PHP INI is not viewable by webusers
+						if ( file_exists( ABSPATH .'php.ini' ) ) {
+							$res = nfw_is_inireadable( 'php.ini' );
+							if ( $res !== false ) {
+								?>
+								<tr>
+									<th scope="row" class="row-med">PHP INI</th>
+									<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( esc_html__('The php.ini file is readable by web users: %s', 'ninjafirewall'), '<code>'. htmlspecialchars( $res ) .'</code>' ) ?> <br /><a href="https://blog.nintechnet.com/protecting-ninjafirewalls-php-ini-file/" target="_blank"><?php esc_html_e('Consult our blog for more info.', 'ninjafirewall') ?></a></td>
+								</tr>
+								<?php
+							}
+						}
+						if ( file_exists( ABSPATH .'.user.ini' ) ) {
+							$res = nfw_is_inireadable( '.user.ini' );
+							if ( $res !== false ) {
+								?>
+								<tr>
+									<th scope="row" class="row-med">PHP INI</th>
+									<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( esc_html__('The .user.ini file is readable by web users:  %s', 'ninjafirewall'), '<code>'. htmlspecialchars( $res ) .'</code>' ) ?><br /><a href="https://blog.nintechnet.com/protecting-ninjafirewalls-php-ini-file/" target="_blank"><?php esc_html_e('Consult our blog for more info.', 'ninjafirewall') ?></a></td>
+								</tr>
+								<?php
+							}
+						}
+					}
+
+					// Error log
+					$log = NFW_LOG_DIR . '/nfwlog/error_log.php';
+					if ( file_exists( $log ) ) {
+						$errlog_content = file( $log );
+						array_shift( $errlog_content );
+						if (! empty( $errlog_content ) ) {
+							?>
+							<tr id="error-log-alert">
+								<th scope="row" class="row-med"><?php _e('Error log', 'ninjafirewall') ?></th>
+								<td><span class="dashicons dashicons-dismiss nfw-danger"></span><input type="button" id="nfw-errorlog-thickbox" value="<?php _e('View error log', 'ninjafirewall') ?>" class="button-secondary"></td>
+							</tr>
+							<?php
+						}
+					}
+
+					/**
+					 * Check for NinjaFirewall optional config file.
+					 */
+					$doc_root = rtrim( $_SERVER['DOCUMENT_ROOT'], '/');
+					if ( @file_exists( $file = $doc_root . '/.htninja') ||
+						@file_exists( $file = dirname( $doc_root ) . '/.htninja') ) {
+
+						echo '<tr>
+							<th scope="row" class="row-med">'. esc_html__('Optional configuration file',
+							'ninjafirewall') .'</th><td><code>'. htmlentities( $file ) .'</code></td>
+						</tr>';
+						/**
+						 * Check if we have a MySQLi link identifier defined in the .htninja.
+						 */
+						if (! empty( $GLOBALS['nfw_mysqli'] ) && ! empty( $GLOBALS['nfw_table_prefix'] ) ) {
+							echo '<tr>
+								<th scope="row" class="row-med">'. esc_html__('MySQLi link identifier',
+								'ninjafirewall') .'</th><td>' .
+								esc_html__('A MySQLi link identifier was detected in your <code>.htninja</code>.',
+								'ninjafirewall') . '</td>
+							</tr>';
+						}
+					}
 					?>
-					<td><?php
-						printf(
-							/* Translators: <a> and </a> anchor tags */
-							esc_html__('You are using PHP sessions. If you want to switch to NinjaFirewall sessions, please %sconsult our blog%s.', 'ninjafirewall'),
-							'<a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/#user_session" target="_blank" rel="noreferrer noopener">', '</a>'
-						); ?>
-					</td>
-					<?php
+						<tr>
+							<th scope="row" class="row-med"><?php _e('Help &amp; configuration', 'ninjafirewall') ?></th>
+							<td><a href="https://blog.nintechnet.com/securing-wordpress-with-a-web-application-firewall-ninjafirewall/">Securing WordPress with NinjaFirewall (WP Edition)</a></td>
+						</tr>
+
+					</table>
+
+				</td>
+				<td style="vertical-align:top;text-align: center"><?php
+				/**
+				 * Display a discount coupon, if any.
+				 */
+				if (! empty( $nfw_options['coupon']['date'] ) ) {
+					require_once __DIR__ .'/class-coupon.php';
+					$coupon = new NinjaFirewall_coupon();
+					$coupon->show();
 				}
-			?>
+				?></td>
 			</tr>
-			<?php
-		}
-
-
-		if ( ! empty( $nfw_options['clogs_pubkey'] ) ) {
-			$err_msg = $ok_msg = '';
-			if (! preg_match( '/^[a-f0-9]{40}:([a-f0-9:.]{3,39}|\*)$/', $nfw_options['clogs_pubkey'], $match ) ) {
-				$err_msg = sprintf( __('the public key is invalid. Please <a href="%s">check your configuration</a>.', 'ninjafirewall'), '?page=nfsublog#clogs');
-
-			} else {
-				if ( $match[1] == '*' ) {
-					$ok_msg = __( "No IP address restriction.", 'ninjafirewall');
-
-				} elseif ( filter_var( $match[1], FILTER_VALIDATE_IP ) ) {
-					$ok_msg = sprintf( __("IP address %s is allowed to access NinjaFirewall's log on this server.", 'ninjafirewall'), htmlspecialchars( $match[1]) );
-
-				} else {
-					$err_msg = sprintf( __('the whitelisted IP is not valid. Please <a href="%s">check your configuration</a>.', 'ninjafirewall'), '?page=nfsublog#clogs');
-				}
-			}
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Centralized Logging', 'ninjafirewall') ?></th>
-			<?php
-			if ( $err_msg ) {
-				?>
-					<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( __('Error: %s', 'ninjafirewall'), $err_msg) ?></td>
-				</tr>
-				<?php
-				$err_msg = '';
-			} else {
-				?>
-					<td><a href="?page=nfsublog#clogs"><?php _e('Enabled', 'ninjafirewall'); echo "</a>. $ok_msg"; ?></td>
-				</tr>
-			<?php
-			}
-		}
-
-		if (! filter_var(NFW_REMOTE_ADDR, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE) ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Source IP', 'ninjafirewall') ?> <span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can use the IP Access Control section to easily configure all IP address related options (source, whitelist, blacklist, rate limiting etc).', 'ninjafirewall' ) ?>"></span></th>
-				<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('You have a private IP : %s', 'ninjafirewall') .'<br />'. __('If your site is behind a reverse proxy or a load balancer, ensure that you have setup your HTTP server or PHP to forward the correct visitor IP, otherwise use the NinjaFirewall %s configuration file.', 'ninjafirewall'), htmlentities(NFW_REMOTE_ADDR), '<code><a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/">.htninja</a></code>') ?></td>
-			</tr>
-			<?php
-		}
-		if (! empty( $_SERVER["HTTP_CF_CONNECTING_IP"] ) ) {
-			if ( NFW_REMOTE_ADDR != $_SERVER["HTTP_CF_CONNECTING_IP"] ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('CDN detection', 'ninjafirewall') ?> <span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can use the IP Access Control section to easily configure all IP address related options (source, whitelist, blacklist, rate limiting etc).', 'ninjafirewall' ) ?>"></span></th>
-				<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('%s detected: you seem to be using Cloudflare CDN services. Ensure that you have setup your HTTP server or PHP to forward the correct visitor IP, otherwise use the NinjaFirewall %s configuration file.', 'ninjafirewall'), '<code>HTTP_CF_CONNECTING_IP</code>', '<code><a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/">.htninja</a></code>') ?></td>
-			</tr>
-			<?php
-			}
-		}
-		if (! empty( $_SERVER["HTTP_INCAP_CLIENT_IP"] ) ) {
-			if ( NFW_REMOTE_ADDR != $_SERVER["HTTP_INCAP_CLIENT_IP"] ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('CDN detection', 'ninjafirewall') ?> <span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can use the IP Access Control section to easily configure all IP address related options (source, whitelist, blacklist, rate limiting etc).', 'ninjafirewall' ) ?>"></span></th>
-				<td><span class="dashicons dashicons-warning nfw-warning"></span><?php printf( __('%s detected: you seem to be using Incapsula CDN services. Ensure that you have setup your HTTP server or PHP to forward the correct visitor IP, otherwise use the NinjaFirewall %s configuration file.', 'ninjafirewall'), '<code>HTTP_INCAP_CLIENT_IP</code>', '<code><a href="https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/">.htninja</a></code>') ?></td>
-			</tr>
-			<?php
-			}
-		}
-
-		if (! is_writable( NFW_LOG_DIR . '/nfwlog' ) ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Log dir', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( __('%s directory is not writable! Please chmod it to 0777 or equivalent.', 'ninjafirewall'), '<code>'. htmlspecialchars(NFW_LOG_DIR) .'/nfwlog/</code>') ?></td>
-			</tr>
-		<?php
-		}
-
-		if (! is_writable( NFW_LOG_DIR . '/nfwlog/cache') ) {
-			?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Log dir', 'ninjafirewall') ?></th>
-				<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf(__('%s directory is not writable! Please chmod it to 0777 or equivalent.', 'ninjafirewall'), '<code>'. htmlspecialchars(NFW_LOG_DIR) . '/nfwlog/cache/</code>') ?></td>
-			</tr>
-		<?php
-		}
-
-
-		if (! defined('NF_DISABLE_PHPINICHECK') && ! defined('NFW_WPWAF') ) {
-
-			// Make sure the PHP INI is not viewable by webusers
-			if ( file_exists( ABSPATH .'php.ini' ) ) {
-				$res = nfw_is_inireadable( 'php.ini' );
-				if ( $res !== false ) {
-					?>
-					<tr>
-						<th scope="row" class="row-med">PHP INI</th>
-						<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( esc_html__('The php.ini file is readable by web users: %s', 'ninjafirewall'), '<code>'. htmlspecialchars( $res ) .'</code>' ) ?> <br /><a href="https://blog.nintechnet.com/protecting-ninjafirewalls-php-ini-file/" target="_blank"><?php esc_html_e('Consult our blog for more info.', 'ninjafirewall') ?></a></td>
-					</tr>
-					<?php
-				}
-			}
-			if ( file_exists( ABSPATH .'.user.ini' ) ) {
-				$res = nfw_is_inireadable( '.user.ini' );
-				if ( $res !== false ) {
-					?>
-					<tr>
-						<th scope="row" class="row-med">PHP INI</th>
-						<td><span class="dashicons dashicons-dismiss nfw-danger"></span><?php printf( esc_html__('The .user.ini file is readable by web users:  %s', 'ninjafirewall'), '<code>'. htmlspecialchars( $res ) .'</code>' ) ?><br /><a href="https://blog.nintechnet.com/protecting-ninjafirewalls-php-ini-file/" target="_blank"><?php esc_html_e('Consult our blog for more info.', 'ninjafirewall') ?></a></td>
-					</tr>
-					<?php
-				}
-			}
-		}
-
-		// Error log
-		$log = NFW_LOG_DIR . '/nfwlog/error_log.php';
-		if ( file_exists( $log ) ) {
-			$errlog_content = file( $log );
-			array_shift( $errlog_content );
-			if (! empty( $errlog_content ) ) {
-				?>
-				<tr id="error-log-alert">
-					<th scope="row" class="row-med"><?php _e('Error log', 'ninjafirewall') ?></th>
-					<td><span class="dashicons dashicons-dismiss nfw-danger"></span><input type="button" id="nfw-errorlog-thickbox" value="<?php _e('View error log', 'ninjafirewall') ?>" class="button-secondary"></td>
-				</tr>
-				<?php
-			}
-		}
-
-		/**
-		 * Check for NinjaFirewall optional config file.
-		 */
-		$doc_root = rtrim( $_SERVER['DOCUMENT_ROOT'], '/');
-		if ( @file_exists( $file = $doc_root . '/.htninja') ||
-			@file_exists( $file = dirname( $doc_root ) . '/.htninja') ) {
-
-			echo '<tr>
-				<th scope="row" class="row-med">'. esc_html__('Optional configuration file',
-				'ninjafirewall') .'</th><td><code>'. htmlentities( $file ) .'</code></td>
-			</tr>';
-			/**
-			 * Check if we have a MySQLi link identifier defined in the .htninja.
-			 */
-			if (! empty( $GLOBALS['nfw_mysqli'] ) && ! empty( $GLOBALS['nfw_table_prefix'] ) ) {
-				echo '<tr>
-					<th scope="row" class="row-med">'. esc_html__('MySQLi link identifier',
-					'ninjafirewall') .'</th><td>' .
-					esc_html__('A MySQLi link identifier was detected in your <code>.htninja</code>.',
-					'ninjafirewall') . '</td>
-				</tr>';
-			}
-		}
-		?>
-			<tr>
-				<th scope="row" class="row-med"><?php _e('Help &amp; configuration', 'ninjafirewall') ?></th>
-				<td><a href="https://blog.nintechnet.com/securing-wordpress-with-a-web-application-firewall-ninjafirewall/">Securing WordPress with NinjaFirewall (WP Edition)</a></td>
-			</tr>
-
 		</table>
+
 	</div>
 
 	<!-- Monthly statistics -->
@@ -549,6 +535,13 @@ function nfw_is_inireadable( $ini ) {
 	// in the backend because the server returned a 403 error, we don't use
 	// the WordPress's API
 	@file_get_contents( $url, false, $context );
+	/**
+	 * $http_response_header is deprecated in PHP 8.5, hence we use the
+	 * http_get_last_response_headers() function instead (PHP >= 8.4).
+	 */
+	if ( function_exists('http_get_last_response_headers') ) {
+		$http_response_header = http_get_last_response_headers();
+	}
 	if ( empty( $http_response_header ) ) {
 		return false;
 	}

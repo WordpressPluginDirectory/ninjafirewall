@@ -190,7 +190,7 @@ if ( $gd_disabled && $bfconfig['bf_type'] == 1 ) {
 	echo '<div class="error notice is-dismissible"><p>' .
 		__('Error: GD Support is not available on your server, the captcha protection will not work!', 'ninjafirewall') .'</p></div>';
 }
-
+nfw_contextual_help();
 ?>
 <form method="post" name="bp_form" onSubmit="return check_login_fields();">
 

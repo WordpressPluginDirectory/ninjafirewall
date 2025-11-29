@@ -42,7 +42,9 @@ if ( isset( $_POST['nfw_options']) ) {
 if (! isset( $nfw_options['a_0'] ) ) {
 	$nfw_options['a_0'] = 1;
 }
-?><br />
+
+nfw_contextual_help();
+?>
 	<form method="post" name="nfwalerts">
 	<?php wp_nonce_field('events_save', 'nfwnonce', 0); ?>
 	<h3><?php _e('WordPress admin dashboard', 'ninjafirewall') ?></h3>

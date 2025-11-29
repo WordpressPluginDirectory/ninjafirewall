@@ -26,7 +26,7 @@ class NinjaFirewall_session {
 
 
 	/**
-	 * Start a PHP session.
+	 * Start a NinjaFirewall session.
 	 */
 	public static function start() {
 		/**
@@ -43,7 +43,7 @@ class NinjaFirewall_session {
 			if ( defined('NFWSESSION_DIR') ) {
 				self::$session_dir = NFWSESSION_DIR;
 			} else {
-				self::$session_dir = NFW_LOG_DIR .'/sessions';
+				self::$session_dir = NFW_LOG_DIR .'/nfwlog/session';
 			}
 			if (! is_dir( self::$session_dir ) ) {
 				$res = mkdir( self::$session_dir, 0700, true );
@@ -84,7 +84,7 @@ class NinjaFirewall_session {
 			unset( $_COOKIE[ self::$SESSION_NAME ] );
 		}
 		/**
-		 * Create a session ID and the corresponding file.
+		 * Create a session ID and its corresponding file.
 		 */
 		self::$session_status	= true;
 		self::$SESSION_DATA		= [];

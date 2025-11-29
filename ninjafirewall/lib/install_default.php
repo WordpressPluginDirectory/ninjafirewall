@@ -248,11 +248,15 @@ function nfw_create_log_dir() {
 		exit( '<font style="font-size:14px;">'. $err_msg .'</font>' );
 	}
 
-	if (! file_exists( NFW_LOG_DIR . '/nfwlog' ) ) {
-		mkdir( NFW_LOG_DIR . '/nfwlog', 0755 );
+	if (! file_exists( NFW_LOG_DIR .'/nfwlog') ) {
+		mkdir( NFW_LOG_DIR .'/nfwlog', 0755 );
+		/**
+		 * 2025-09-03: We temporarily force NinjaFirewall session on all new installs.
+		 */
+		touch( NFW_LOG_DIR .'/nfwlog/ninjasession');
 	}
-	if (! file_exists( NFW_LOG_DIR . '/nfwlog/cache' ) ) {
-		mkdir( NFW_LOG_DIR . '/nfwlog/cache', 0755 );
+	if (! file_exists( NFW_LOG_DIR .'/nfwlog/cache') ) {
+		mkdir( NFW_LOG_DIR .'/nfwlog/cache', 0755 );
 	}
 
 	touch( NFW_LOG_DIR . '/nfwlog/index.html' );

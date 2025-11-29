@@ -26,6 +26,10 @@ class NinjaFirewall_helpers {
 
 		$list = [];
 
+		if (! is_dir( $directory ) ) {
+			return $list;
+		}
+
 		foreach ( new DirectoryIterator( $directory ) as $finfo ) {
 			if (! $finfo->isDot() && preg_match("`$regex`", $finfo->getFilename() ) ) {
 				if ( $pathname ) {
@@ -50,6 +54,10 @@ class NinjaFirewall_helpers {
 	public static function nfw_glob_recursive( $directory, $regex, $pathname = false ) {
 
 		$list = [];
+
+		if (! is_dir( $directory ) ) {
+			return $list;
+		}
 
 		$dir_iterator = new RecursiveDirectoryIterator( $directory );
 		$iterator = new RecursiveIteratorIterator( $dir_iterator );

@@ -36,9 +36,9 @@ if ( isset( $_POST['nfw_options'] ) ) {
 		echo '<div class="updated notice is-dismissible"><p>' . __('Your changes have been saved.', 'ninjafirewall') . '</p></div>';
 	}
 }
-
+	nfw_contextual_help();
 ?>
-	<br />
+
 	<form method="post" name="option_form" enctype="multipart/form-data" onsubmit="return nfwjs_save_options();">
 
 	<?php wp_nonce_field('options_save', 'nfwnonce', 0); ?>

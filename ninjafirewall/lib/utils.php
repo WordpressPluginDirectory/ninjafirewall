@@ -27,6 +27,16 @@ if (! defined('NINJAFIREWALL_MU_PLUGIN') ) {
 	}
 }
 
+// ---------------------------------------------------------------------
+// Contextual help reminder.
+
+function nfw_contextual_help() {
+	echo '<div style="text-align:right;font-weight:normal;padding-top: 9px;">' .
+		'<span class="description" style="color:#808080;">' .
+		esc_html('Click on the above "Help" tab for help.', 'ninjafirewall') .
+		'</span></div>';
+}
+
 // --------------------------------------------------------------------- 2023-07-27
 // Animated button/switch.
 
@@ -709,6 +719,13 @@ function nfw_garbage_collector() {
 		require __DIR__ .'/event_updates.php';
 		nfw_check_security_updates();
 	}
+
+	/**
+	 * Check if we have a discount coupon to offer to the user.
+	 */
+	require_once __DIR__ .'/class-coupon.php';
+	$coupon = new NinjaFirewall_coupon();
+	$coupon->run();
 }
 
 // ---------------------------------------------------------------------

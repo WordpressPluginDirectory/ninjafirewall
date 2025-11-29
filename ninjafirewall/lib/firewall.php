@@ -77,9 +77,11 @@ if (! is_dir($nfw_['log_dir']) ) {
 }
 
 /**
- * Select whether we want to use PHP or NinjaFirewall sessions.
+ * Select whether we want to use PHP or NF (default since v4.8.1) sessions.
  */
-if ( defined('NFWSESSION') ) {
+if ( is_file( "{$nfw_['log_dir']}/phpsession" ) ) {
+	require_once __DIR__ .'/class-php-session.php';
+} else {
 	if (! defined('NFWSESSION_DIR') ) {
 		/**
 		 * NFWSESSION_DIR can be defined in the .htninja.
@@ -87,8 +89,6 @@ if ( defined('NFWSESSION') ) {
 		define('NFWSESSION_DIR', "{$nfw_['log_dir']}/session" );
 	}
 	require_once __DIR__ .'/class-nfw-session.php';
-} else {
-	require_once __DIR__ .'/class-php-session.php';
 }
 
 // Get/set PID
@@ -498,14 +498,32 @@ function nfw_get_data( $what ) {
 			}
 		// Options
 		} else {
-			if (! $nfw_['result'] = @$nfw_['mysqli']->query('SELECT * FROM `' . $nfw_['mysqli']->real_escape_string($nfw_['table_prefix']) . "options` WHERE `option_name` = 'nfw_options'") ) {
-
-			// Maybe this is an old multisite install where the main site
-			// options table is named 'wp_1_options' instead of 'wp_options'
-				if (! $nfw_['result'] = @$nfw_['mysqli']->query('SELECT * FROM `' . $nfw_['mysqli']->real_escape_string($nfw_['table_prefix']) . "1_options` WHERE `option_name` = 'nfw_options'") ) {
+			/**
+			 * Since PHP 8.1, MySQLi extension throws an Exception on errors
+			 */
+			try {
+				$nfw_['result'] = @$nfw_['mysqli']->query('SELECT * FROM `' .
+					$nfw_['mysqli']->real_escape_string( $nfw_['table_prefix'] ) .
+					"options` WHERE `option_name` = 'nfw_options'"
+				);
+			}
+			catch ( Exception $e ) {
+				/**
+				 * Maybe this is an old multisite install where the main site
+				 * options table is named 'wp_1_options' instead of 'wp_options'
+				 */
+				try {
+					$nfw_['result'] = @$nfw_['mysqli']->query('SELECT * FROM `' .
+						$nfw_['mysqli']->real_escape_string( $nfw_['table_prefix'] ) .
+						"1_options` WHERE `option_name` = 'nfw_options'"
+					);
+				}
+				catch ( Exception $e ) {
 					return 5;
 				}
-				// Change the table prefix to match 'wp_1_options'
+				/**
+				 * Change the table prefix to match 'wp_1_options'
+				 */
 				$nfw_['table_prefix'] = "{$nfw_['table_prefix']}1_";
 			}
 			if (! $nfw_['options'] = @$nfw_['result']->fetch_object() ) {
@@ -1309,18 +1327,31 @@ function nfw_flatten( $glue, $pieces ) {
 
 function nfw_check_b64( $key, $string ) {
 
-	if ( defined('NFW_STATUS') || strlen($string) < 4 ) { return; }
+	if ( defined('NFW_STATUS') || strlen( $string ) < 4 ) {
+		return;
+	}
 
-	$decoded = base64_decode($string);
-	if ( strlen($decoded) < 4 ) { return; }
+	$whitelist = [
+		'fpd_print_order',		// Fancy Product Designer
+		'g-recaptcha-response'	// reCAPTCHA
+	];
+	if ( in_array( $key, $whitelist ) ) {
+		return;
+	}
 
-	if ( preg_match( '`\b(?:\$?_(COOKIE|ENV|FILES|(?:GE|POS|REQUES)T|SE(RVER|SSION))|HTTP_(?:(?:POST|GET)_VARS|RAW_POST_DATA)|GLOBALS)\s*[=\[)]|\b(?i:array_map|assert|base64_(?:de|en)code|chmod|curl_exec|(?:ex|im)plode|error_reporting|eval|file(?:_get_contents)?|f(?:open|write|close)|fsockopen|function_exists|gzinflate|md5|move_uploaded_file|ob_start|passthru|[ep]reg_replace|phpinfo|stripslashes|strrev|(?:shell_)?exec|substr|system|unlink)\s*\(|[\s;]echo\s*[\'"]|<(?i:applet|embed|i?frame(?:set)?|marquee|object|script)\b|\W\$\{\s*[\'"]\w+[\'"]|<\?(?i:php|=)\s|(?i:(?:\b|\d)select\b.+?from\b.+?(?:\b|\d)where|(?:\b|\d)insert\b.+?into\b|(?:\b|\d)union\b.+?(?:\b|\d)select\b|(?:\b|\d)update\b.+?(?:\b|\d)set\b)|^.{0,25}[;{}]?\b[OC]:\d+:"[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*":\d+:{.*?}`', $decoded) ) {
+	$decoded = base64_decode( $string );
+	if ( strlen($decoded) < 4 ) {
+		return;
+	}
+
+	if ( preg_match( '`\b(?:\$?_(COOKIE|ENV|FILES|(?:GE|POS|REQUES)T|SE(RVER|SSION))|HTTP_(?:(?:POST|GET)_VARS|RAW_POST_DATA)|GLOBALS)\s*[=\[)]|\b(?i:array_map|assert|base64_(?:de|en)code|chmod|curl_exec|(?:ex|im)plode|error_reporting|eval|file(?:_get_contents)?|f(?:open|write|close)|fsockopen|function_exists|gzinflate|md5|move_uploaded_file|ob_start|passthru|[ep]reg_replace|phpinfo|stripslashes|strrev|(?:shell_)?exec|substr|system|unlink)\s*\(|[\s;]echo\s*[\'"]|<(?i:applet|embed|i?frame(?:set)?|marquee|object|script)\b|\W\$\{\s*[\'"]\w+[\'"]|<\?(?i:php|=)\s|(?i:(?:\b|\d)select\b.+?from\b.+?(?:\b|\d)where|(?:\b|\d)insert\b.+?into\b|(?:\b|\d)union\b.+?(?:\b|\d)select\b|(?:\b|\d)update\b.+?(?:\b|\d)set\b)|^.{0,25}[;{}]?\b[OC]:\d+:"[a-zA-Z_\x7f-\xff][a-zA-Z0-9_\x7f-\xff]*":\d+:{.*?}`', $decoded ) ) {
+		// JetPack
 		if ( $key === 'args' && ! defined('NFW_WPWAF') &&
 			preg_match( '/^{"query":"SELECT/', $decoded ) &&
 			strpos($_SERVER['SCRIPT_NAME'], '/jetpack-temp/jp-helper-') !== FALSE ) {
 			return;
 		}
-		nfw_log('BASE64-encoded injection', 'POST:' . $key . ' = ' . $string, '3', 0);
+		nfw_log('BASE64-encoded injection', 'POST:' . $key . ' = ' . $string, '3', 0 );
 		nfw_block();
 	}
 }
@@ -1804,7 +1835,7 @@ function nfw_check_auth( $auth_name, $auth_pass, $auth_msgtxt, $bf_rand, $b64, $
 		$bf_nosig = '';
 	}
 	if ( $bf_type == 0 ) {
-		$message = '<html><head><title>'. $bf_nosig  .'</title><link rel="stylesheet" href="./wp-includes/css/buttons.min.css" type="text/css"><link rel="stylesheet" href="./wp-admin/css/login.min.css" type="text/css"><link rel="stylesheet" href="./wp-admin/css/forms.min.css" type="text/css"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body class="login wp-core-ui" style="color:#444"><div id="login"><center><h2>' . $auth_msgtxt . '</h2><form method="post"><label>'. $bf_nosig  .'</label><br><br><p><input class="input" type="text" name="u" placeholder="Username"></p><p><input class="input" type="password" name="p" placeholder="Password"></p><p align="right"><input type="submit" value="Login Page&nbsp;&#187;" class="button-secondary"></p><input type="hidden" name="reauth" value="1"></form></center></div></body></html>';
+		$message = '<html><head><title>'. $bf_nosig  .'</title><link rel="stylesheet" href="./wp-includes/css/buttons.min.css" type="text/css"><link rel="stylesheet" href="./wp-admin/css/login.min.css" type="text/css"><link rel="stylesheet" href="./wp-admin/css/forms.min.css" type="text/css"><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body class="login wp-core-ui" style="color:#444"><div id="login"><center><h2>' . $auth_msgtxt . '</h2><form method="post"><label>'. $bf_nosig  .'</label><br><br><p><input class="input" type="text" name="u" placeholder="Username" autofocus></p><p><input class="input" type="password" name="p" placeholder="Password"></p><p align="right"><input type="submit" value="Login Page&nbsp;&#187;" class="button-secondary"></p><input type="hidden" name="reauth" value="1"></form></center></div></body></html>';
 	} else {
 		$captcha = nfw_get_captcha();
 		if ( $captcha === false ) {
@@ -1858,7 +1889,6 @@ function nfw_get_captcha() {
 	imagepng( $image );
 	$img_content = ob_get_contents();
 	ob_end_clean();
-	imagedestroy( $image );
 
 	$res = '<img src="data:image/png;base64,'. base64_encode( $img_content ) .'" />';
 
@@ -1867,7 +1897,7 @@ function nfw_get_captcha() {
 	return $res;
 }
 
-// ===================================================================== 2023-05-16
+// =====================================================================
 // From WP db_connect()
 
 function nfw_check_dbhost() {

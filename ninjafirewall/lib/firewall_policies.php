@@ -85,6 +85,7 @@ if ( isset( $_POST['nfw_options']) ) {
 	<a id="tab-basic" class="nav-tab<?php echo $basic_tab ?>" onClick="nfwjs_switch_tabs('basic', 'basic:intermediate:advanced')"><?php _e( 'Basic Policies', 'ninjafirewall' ) ?></a>
 	<a id="tab-intermediate" class="nav-tab<?php echo $intermediate_tab ?>" onClick="nfwjs_switch_tabs('intermediate', 'basic:intermediate:advanced')"><?php _e( 'Intermediate Policies', 'ninjafirewall' ) ?></a>
 	<a id="tab-advanced" class="nav-tab<?php echo $advanced_tab ?>" onClick="nfwjs_switch_tabs('advanced', 'basic:intermediate:advanced')"><?php _e( 'Advanced Policies', 'ninjafirewall' ) ?></a>
+	<?php nfw_contextual_help() ?>
 </h2>
 <br />
 <?php

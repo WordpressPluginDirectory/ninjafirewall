@@ -46,6 +46,7 @@ if ( $_REQUEST['tab'] == 'editor' ) {
 	<h2 class="nav-tab-wrapper wp-clearfix" style="cursor:pointer">
 		<a id="tab-updates" class="nav-tab<?php echo $updates_tab ?>" onClick="nfwjs_switch_tabs('updates', 'updates:editor')"><?php _e( 'Rules Updates', 'ninjafirewall' ) ?></a>
 		<a id="tab-editor" class="nav-tab<?php echo $editor_tab ?>" onClick="nfwjs_switch_tabs('editor', 'updates:editor')"><?php _e( 'Rules Editor', 'ninjafirewall' ) ?></a>
+		<?php nfw_contextual_help() ?>
 	</h2>
 	<br />
 

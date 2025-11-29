@@ -305,12 +305,11 @@ td.country-list {
 }
 /* TipTip CSS - Version 1.2 */
 .ninjafirewall-tip{
-	color:#3c434a;
+	color:#d63638;
 	display:inline-block;
-	font-size:1.2em;
+	font-size:1.5em;
 	font-style:normal;
 	position:relative;
-	vertical-align:middle;
 	height:18px;
 	line-height:18px;
 	width:18px;

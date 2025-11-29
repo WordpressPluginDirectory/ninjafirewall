@@ -39,6 +39,7 @@ if ( $_REQUEST['tab'] == 'livelog' ) {
 		<a id="tab-firewalllog" class="nav-tab<?php echo $firewalllog_tab ?>" onClick="nfwjs_switch_tabs('firewalllog', 'firewalllog:livelog')"><?php _e( 'Firewall Log', 'ninjafirewall' ) ?></a>
 		<a id="tab-livelog" class="nav-tab<?php echo $livelog_tab ?>" onClick="nfwjs_switch_tabs('livelog', 'firewalllog:livelog')"><?php _e( 'Live Log', 'ninjafirewall' ) ?></a>
 		<a class="nav-tab"><span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can filter the log by threat severity, type and date. You can delete it, enable its rotation based on the size of the file. It can be exported as a TSV (tab-separated values) text file. You can easily add any IP address to your Access Control whitelist or blacklist and it is possible to redirect all incidents and events to the Syslog server.', 'ninjafirewall' ); echo ' ';  esc_attr_e('Also, the Centralized Logging feature lets you remotely access the firewall log of all your NinjaFirewall protected websites from one single installation.', 'ninjafirewall' ) ?>"></span></a>
+		<?php nfw_contextual_help() ?>
 	</h2>
 	<br />
 

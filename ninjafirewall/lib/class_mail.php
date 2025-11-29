@@ -141,6 +141,7 @@ class NinjaFirewall_mail {
 	/**
 	 * Send an email using PHP mail().
 	 * Used by the firewall part that loads before WordPress.
+	 * Note: multiple comma-separated email addresses can be present in the "To:" field.
 	 */
 	public static function PHPsend( $to, $tpl, $s_values = [], $c_values = [],
 							$logdir = '', $headers = '', $attachment = '', $attachment_name = '') {

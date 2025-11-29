@@ -324,26 +324,6 @@ function nfwjs_fullwaf_countdown() {
 	}
 }
 
-function nfwjs_welcomeajax( nonce ) {
-
-	// Ajax
-	var data = {
-		'action': 'nfw_welcomescreen',
-		'nonce': nonce,
-	};
-	jQuery.ajax( {
-		type: "POST",
-		url: ajaxurl,
-		headers: {
-			'Accept-Language':'en-US,en;q=0.5'
-		},
-		data: data,
-		dataType: "text",
-		// We don't want any response.
-	});
-	return 1;
-}
-
 function nfwjs_del_errorlog() {
 	if ( confirm( nfwi18n.del_errorlog ) ) {
 		return true;

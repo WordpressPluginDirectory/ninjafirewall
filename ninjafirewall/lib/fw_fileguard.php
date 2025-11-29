@@ -38,7 +38,7 @@ function fw_fileguard() {
 				/**
 				 * Did we check it already ?
 				 */
-				if (! file_exists( $nfw_['log_dir'] .'/cache/fg_'. $nfw_['nfw_options']['fg_stat']['ino'] .'.php') ) {
+				if (! is_file( $nfw_['log_dir'] .'/cache/fg_'. $nfw_['nfw_options']['fg_stat']['ino'] .'.php') ) {
 					/**
 					 * Log it.
 					 */

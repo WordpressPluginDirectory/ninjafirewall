@@ -46,6 +46,7 @@ if ( $_REQUEST['tab'] == 'filecheck' ) {
 		<a id="tab-filecheck" class="nav-tab<?php echo $filecheck_tab ?>" onClick="nfwjs_switch_tabs('filecheck', 'fileguard:filecheck')"><?php _e( 'File Check', 'ninjafirewall' ) ?></a>
 		<a id="tab-fileguard" class="nav-tab<?php echo $fileguard_tab ?>" onClick="nfwjs_switch_tabs('fileguard', 'fileguard:filecheck')"><?php _e( 'File Guard', 'ninjafirewall' ) ?></a>
 		<a class="nav-tab"><span class="ninjafirewall-tip" data-tip="<?php esc_attr_e('In the Premium version of NinjaFirewall, you can also monitor the response body, i.e., the output of the HTML page, and search it for some specific keywords, which can be useful to identify errors, hacked content and data leakage issues on your website.', 'ninjafirewall' ) ?>"></span></a>
+		<?php nfw_contextual_help() ?>
 	</h2>
 	<br />
 

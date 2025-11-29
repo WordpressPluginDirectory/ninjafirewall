@@ -3,7 +3,7 @@ Contributors: nintechnet, bruandet
 Tags: security, firewall, malware, virus, protection
 Requires at least: 4.9
 Tested up to: 6.8
-Stable tag: 4.7.4
+Stable tag: 4.8.2
 Requires PHP: 7.1
 License: GPLv3 or later
 License URI: http://www.gnu.org/licenses/gpl-3.0.html
@@ -79,7 +79,7 @@ NinjaFirewall is multi-site compatible. It will protect all sites from your netw
 
 = Possibility to prepend your own PHP code to the firewall =
 
-You can prepend your own PHP code to the firewall with the help of an [optional distributed configuration file](https://nintechnet.com/ninjafirewall/wp-edition/help/?htninja). It will be processed before WordPress and all its plugins are loaded. This is a very powerful feature, and there is almost no limit to what you can do: add your own security rules, manipulate HTTP requests, variables etc.
+You can prepend your own PHP code to the firewall with the help of an [optional distributed configuration file](https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/). It will be processed before WordPress and all its plugins are loaded. This is a very powerful feature, and there is almost no limit to what you can do: add your own security rules, manipulate HTTP requests, variables etc.
 
 = Low Footprint Firewall =
 
@@ -207,6 +207,34 @@ WordPress Sicherheit Plugin.
 == Changelog ==
 
 Need more security? Take the time to explore our supercharged Premium edition: [NinjaFirewall WP+ Edition](https://nintechnet.com/ninjafirewall/wp-edition/?comparison)
+
+= 4.8.2 =
+
+* Fixed a "No such file or directory" PHP error due to a wrong path to the session folder (props @gosuccess).
+
+= 4.8.1 =
+
+* All active installations will now use NinjaFirewall sessions instead of PHP's.
+* Added compatibility with PHP 8.5, which will be released in a few weeks.
+
+= 4.8 =
+
+* All new installations will now use NinjaFirewall sessions instead of PHP's. Current installations will automatically migrate at a later time (next release or so).
+* Whitelisted reCAPTCHA response to prevent it from being blocked by the firewall.
+* WP+ Edition (Premium): Updated the IP location databases.
+* WP+ Edition (Premium): Added the PROPFIND method to the "Access Control > HTTP Methods" section. By default, it is not enabled.
+* Updated Charts.js library.
+* Added the "autofocus" attribute to the login protection form.
+* Fixed a potential database issue: since PHP 8.1 MySQLi extension throws an Exception on errors (props @m2e47).
+* Small fixes and adjustments.
+
+= 4.7.5 =
+
+* Several small fixes and adjustments under the hood.
+* WP+ Edition (Premium): The firewall log can now be sorted in ascending (oldest entries first) or descending (newest entries first) order. See "NinjaFirewall > Logs > Log Options > Sorting".
+* WP+ Edition (Premium): Added Square and Airwallex webhook IP addresses to the "Access Control > IP address > External Services" section.
+* WP+ Edition (Premium): When saving an IP address to the whitelist or blacklist in the "IP Access Control" settings page, NinjaFirewall will reject non-conform CIDR values and display a warning.
+* WP+ Edition (Premium): Updated geolocation database.
 
 = 4.7.4 =
 

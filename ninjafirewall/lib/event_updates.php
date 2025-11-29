@@ -42,7 +42,7 @@ function nfw_check_security_updates() {
 	}
 
 	if (! isset( $list['wordpress'] ) || ! isset( $list['themes'] ) || ! isset( $list['plugins'] ) ) {
-		nfw_log_error(	__('Downloaded security rules are corrupted', 'ninjafirewall' ) );
+		nfw_log_error(	__('Downloaded list of vulnerabilities is corrupted', 'ninjafirewall' ) );
 		return false;
 	}
 

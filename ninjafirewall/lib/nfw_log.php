@@ -49,7 +49,7 @@ $cur_month = date('Y-m');
 $stat_file = NFW_LOG_DIR . '/nfwlog/stats_' . $cur_month . '.php';
 $log_file  = NFW_LOG_DIR . '/nfwlog/firewall_' . $cur_month . '.php';
 
-if ( file_exists( $stat_file ) ) {
+if ( is_file( $stat_file ) ) {
 	$nfw_stat = file_get_contents( $stat_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
 	$nfw_stat = str_replace( '<?php exit; ?>', '', $nfw_stat );
 } else {
@@ -73,7 +73,7 @@ if ( $loglevel == 4 ) {
 	$REMOTE_ADDR = NFW_REMOTE_ADDR;
 }
 
-if (! file_exists($log_file) ) {
+if (! is_file( $log_file ) ) {
 	$tmp = '<?php exit; ?>' . "\n";
 } else {
 	$tmp = '';

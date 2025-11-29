@@ -30,7 +30,7 @@ function fw_livelog_show() {
 	global $nfw_;
 
 	$nfw_['livelog'] = $nfw_['log_dir'] . '/cache/livelog.php';
-	if ( file_exists($nfw_['livelog']) ) {
+	if ( is_file( $nfw_['livelog'] ) ) {
 		// Check if we need to flush it :
 		if ($_POST['livecls'] > 0) {
 			@file_put_contents( $nfw_['livelog'], '<?php exit; ?>', LOCK_EX);
@@ -79,7 +79,7 @@ function fw_livelog_record() {
 		unlink($nfw_['log_dir'] .'/cache/livelogrun.php');
 		// If the log was not modified for the past 10mn, we delete it as well :
 		$nfw_['livelog'] = $nfw_['log_dir'] . '/cache/livelog.php';
-		if ( file_exists($nfw_['livelog']) ) {
+		if ( is_file( $nfw_['livelog'] ) ) {
 			$nfw_['mtime'] = filemtime($nfw_['livelog']);
 			if ( $now - $nfw_['mtime'] > 600 ) {
 				unlink( $nfw_['livelog'] );
