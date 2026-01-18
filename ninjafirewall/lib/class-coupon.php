@@ -56,7 +56,13 @@ class NinjaFirewall_coupon {
 		$until = 'This offer is valid until '.
 					date('F d', strtotime( $this->options['coupon']['date'] ) );
 
-		echo '<a href="https://nintechnet.com/" alt="Go Pro! Limited time offer" '.
+		if (! empty( $this->options['coupon']['url'] ) ) {
+			$url = $this->options['coupon']['url'];
+		} else {
+			$url = 'https://nintechnet.com/';
+		}
+
+		echo '<a href="'. esc_url( $url ) .'" alt="Go Pro! Limited time offer" '.
 			'title="Go Pro! Limited time offer" target="_blank" rel="noreferrer noopener">'.
 			'<img style="max-width:250px" src="data:image/png;base64, '. esc_attr( $data ) .'" />'.
 			'<br />'. esc_html( $until ) .'</a>';

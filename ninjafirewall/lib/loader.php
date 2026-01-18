@@ -9,7 +9,7 @@ Author URI: https://nintechnet.com/
 License: GPLv3 or later
 Network: true
 */
-if (! defined('ABSPATH') || defined('NFW_STATUS') || defined('NFW_WPWAF') || ! file_exists( WP_PLUGIN_DIR .'/ninjafirewall/lib/firewall.php' ) ) {
+if (! defined('ABSPATH') || defined('NFW_STATUS') || defined('NFW_WPWAF') || ! is_file( WP_PLUGIN_DIR .'/ninjafirewall/lib/firewall.php' ) ) {
 	return false;
 }
 define('NFW_WPWAF', 2);

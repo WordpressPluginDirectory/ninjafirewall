@@ -178,7 +178,7 @@ function nfw_load_default_conf() {
 	// dropins code:
 	if ( isset( $nfw_rules['dropins'] ) ) {
 		if ( $nfw_rules['dropins'] == 'delete' ) {
-			if ( file_exists( NFW_LOG_DIR .'/nfwlog/dropins.php' ) ) {
+			if ( is_file( NFW_LOG_DIR .'/nfwlog/dropins.php' ) ) {
 				@unlink( NFW_LOG_DIR .'/nfwlog/dropins.php' );
 			}
 		} else {
@@ -248,14 +248,14 @@ function nfw_create_log_dir() {
 		exit( '<font style="font-size:14px;">'. $err_msg .'</font>' );
 	}
 
-	if (! file_exists( NFW_LOG_DIR .'/nfwlog') ) {
+	if (! is_dir( NFW_LOG_DIR .'/nfwlog') ) {
 		mkdir( NFW_LOG_DIR .'/nfwlog', 0755 );
 		/**
 		 * 2025-09-03: We temporarily force NinjaFirewall session on all new installs.
 		 */
 		touch( NFW_LOG_DIR .'/nfwlog/ninjasession');
 	}
-	if (! file_exists( NFW_LOG_DIR .'/nfwlog/cache') ) {
+	if (! is_dir( NFW_LOG_DIR .'/nfwlog/cache') ) {
 		mkdir( NFW_LOG_DIR .'/nfwlog/cache', 0755 );
 	}
 
@@ -309,7 +309,7 @@ foreach( \$nfw_exclude_waf_list as \$nfw_exclude_waf_folder ) {
 	}
 
 	$loader .= "
-if ( file_exists('". __DIR__ .'/firewall.php' . "') ) {
+if ( is_file('". __DIR__ .'/firewall.php' . "') ) {
 	@include_once '". __DIR__ .'/firewall.php' . "';
 }
 // EOF
