@@ -29,16 +29,25 @@ function fw_centlog() {
 	$pubkey = explode( ':', $nfw_['nfw_options']['clogs_pubkey'], 2 );
 
 	if ( isset( $pubkey[1]) &&  $pubkey[1] != '*' ) {
-		nfw_check_ip();
 
 		if ( NFW_REMOTE_ADDR != $pubkey[1] ) {
-			nfw_log('Centralized logging: IP not allowed', NFW_REMOTE_ADDR, 6, 0);
+
+			NinjaFirewall_log::write(
+				'Centralized logging: IP not allowed',
+				NFW_REMOTE_ADDR,
+				NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 			fw_centlog_die();
 		}
 	}
 
 	if ( empty( $pubkey[0] ) || sha1( $_POST['clogs_req'] ) !== $pubkey[0] ) {
-		nfw_log('Centralized logging: public key rejected', NFW_REMOTE_ADDR, 6, 0);
+
+		NinjaFirewall_log::write(
+			'Centralized logging: public key rejected',
+			NFW_REMOTE_ADDR,
+			NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+		);
 		fw_centlog_die();
 	}
 

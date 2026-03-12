@@ -26,6 +26,21 @@ $nfw_ = [];
 $nfw_['fw_starttime'] = nfw_fc_metrics('start');
 
 /**
+ * Required classes and constants.
+ */
+if ( ! defined('NFWLOG_DEBUG') ) {
+	define('NFWLOG_MEDIUM', 1);
+	define('NFWLOG_HIGH', 2);
+	define('NFWLOG_CRITICAL', 3);
+	define('NFWLOG_POSTDETECT', 4);
+	define('NFWLOG_UPLOAD', 5);
+	define('NFWLOG_INFO', 6);
+	define('NFWLOG_DEBUG', 7);
+}
+require_once __DIR__ .'/class-ip.php';
+require_once __DIR__ .'/class-firewall-log.php';
+
+/**
  * Optional NinjaFirewall configuration file.
  * See https://blog.nintechnet.com/ninjafirewall-wp-edition-the-htninja-configuration-file/
  */
@@ -118,10 +133,15 @@ if ( $ret !== true ) {
 
 // Fetch options
 $ret = nfw_get_data( 'nfw_options' );
-if ( $ret !== true ) {
+if ( $ret !== true || empty( $nfw_['nfw_options'] ) ) {
 	nfw_quit( $ret );
 	return;
 }
+
+/**
+ * Verify and retrieve the user IP address.
+ */
+NinjaFirewall_IP::check_ip( ['ac_ip' => 1 ] );
 
 if (! empty($nfw_['nfw_options']['clogs_pubkey']) && isset($_POST['clogs_req']) ) {
 	include_once 'fw_centlog.php';
@@ -166,8 +186,6 @@ if (! empty($nfw_['nfw_options']['disable_error_handler']) ) {
 	define('WP_DISABLE_FATAL_ERROR_HANDLER', true);
 }
 
-nfw_check_ip();
-
 // Superglobals override
 if (! empty($nfw_['nfw_options']['php_superglobals']) ) {
 	$sgs = [
@@ -176,15 +194,30 @@ if (! empty($nfw_['nfw_options']['php_superglobals']) ) {
 	];
 	foreach( $sgs as $sg ) {
 		if ( isset( $_GET[$sg] ) ) {
-			nfw_log('Superglobals override attempt', "\$_GET[$sg]: ". serialize( $_GET[$sg] ), 6, 0);
+
+			$nfw_['incidentID'] = NinjaFirewall_log::write(
+				'Superglobals override attempt',
+				"\$_GET[$sg]: ". serialize( $_GET[$sg] ),
+				NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 			unset( $_GET[$sg] );
 		}
 		if ( isset( $_POST[$sg] ) ) {
-			nfw_log('Superglobals override attempt', "\$_POST[$sg]: ". serialize( $_POST[$sg] ), 6, 0);
+
+			$nfw_['incidentID'] = NinjaFirewall_log::write(
+				'Superglobals override attempt',
+				"\$_POST[$sg]: ". serialize( $_POST[$sg] ),
+				NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 			unset( $_POST[$sg] );
 		}
 		if ( isset( $_COOKIE[$sg] ) ) {
-			nfw_log('Superglobals override attempt', "\$_COOKIE[$sg]: ". serialize( $_COOKIE[$sg] ), 6, 0);
+
+			$nfw_['incidentID'] = NinjaFirewall_log::write(
+				'Superglobals override attempt',
+				"\$_COOKIE[$sg]: ". serialize( $_COOKIE[$sg] ),
+				NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 			unset( $_COOKIE[$sg] );
 		}
 	}
@@ -248,18 +281,31 @@ if ( @$nfw_['nfw_options']['scan_protocol'] == 2 && NFW_IS_HTTPS == false ) {
 	return;
 }
 
-if (! empty($nfw_['nfw_options']['fg_enable']) && ! defined('NFW_WPWAF') ) {
+/**
+ * File Guard.
+ */
+if (! empty( $nfw_['nfw_options']['fg_enable'] )  ) {
 	include_once 'fw_fileguard.php';
 	fw_fileguard();
 }
 
 if (! empty($nfw_['nfw_options']['no_host_ip']) && @filter_var(parse_url('http://'.$_SERVER['HTTP_HOST'], PHP_URL_HOST), FILTER_VALIDATE_IP) ) {
-	nfw_log('HTTP_HOST is an IP', $_SERVER['HTTP_HOST'], 1, 0);
+
+	$nfw_['incidentID'] = NinjaFirewall_log::write(
+		'HTTP_HOST is an IP',
+		$_SERVER['HTTP_HOST'],
+		NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+	);
    nfw_block();
 }
 
 if (! empty($nfw_['nfw_options']['referer_post']) && $_SERVER['REQUEST_METHOD'] == 'POST' && ! isset($_SERVER['HTTP_REFERER']) ) {
-	nfw_log('POST method without Referer header', $_SERVER['REQUEST_METHOD'], 1, 0);
+
+	$nfw_['incidentID'] = NinjaFirewall_log::write(
+		'POST method without Referer header',
+		$_SERVER['REQUEST_METHOD'],
+		NFWLOG_MEDIUM, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+	);
    nfw_block();
 }
 
@@ -269,7 +315,12 @@ if (! empty($nfw_['nfw_options']['admin_ajax']) && strpos( $_SERVER['SCRIPT_NAME
 
 if ( strpos($_SERVER['SCRIPT_NAME'], '/xmlrpc.php' ) !== FALSE ) {
 	if (! empty($nfw_['nfw_options']['no_xmlrpc']) ) {
-		nfw_log('Access to WordPress XML-RPC API', $_SERVER['SCRIPT_NAME'], 2, 0);
+
+		$nfw_['incidentID'] = NinjaFirewall_log::write(
+			'Access to WordPress XML-RPC API',
+			$_SERVER['SCRIPT_NAME'],
+			NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+		);
 		nfw_block();
 	}
 	if ( $_SERVER['REQUEST_METHOD'] == 'POST' ) {
@@ -280,7 +331,12 @@ if ( strpos($_SERVER['SCRIPT_NAME'], '/xmlrpc.php' ) !== FALSE ) {
 		if (! empty($nfw_['nfw_options']['no_xmlrpc_multi']) ) {
 
 			if ( @strpos( $HTTP_RAW_POST_DATA, '<methodName>system.multicall</methodName>') !== FALSE ) {
-				nfw_log('Access to WordPress XML-RPC API (system.multicall method)', $_SERVER['SCRIPT_NAME'], 2, 0);
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					'Access to WordPress XML-RPC API (system.multicall method)',
+					$_SERVER['SCRIPT_NAME'],
+					NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+				);
 				nfw_block();
 			}
 		}
@@ -288,30 +344,55 @@ if ( strpos($_SERVER['SCRIPT_NAME'], '/xmlrpc.php' ) !== FALSE ) {
 		if (! empty($nfw_['nfw_options']['no_xmlrpc_pingback']) ) {
 
 			if ( @strpos( $HTTP_RAW_POST_DATA, '<methodName>pingback.ping</methodName>') !== FALSE ) {
-				nfw_log('Access to WordPress XML-RPC API (pingback.ping)', $_SERVER['SCRIPT_NAME'], 2, 0);
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					'Access to WordPress XML-RPC API (pingback.ping)',
+					$_SERVER['SCRIPT_NAME'],
+					NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+				);
 				nfw_block();
 			}
 		}
 	}
 }
 if (! empty($nfw_['nfw_options']['no_xmlrpc_pingback']) && strpos($_SERVER['HTTP_USER_AGENT'], '; verifying pingback from ') !== FALSE) {
-	nfw_log('Blocked pingback verification', $_SERVER['HTTP_USER_AGENT'], 2, 0);
+
+	$nfw_['incidentID'] = NinjaFirewall_log::write(
+		'Blocked pingback verification',
+		$_SERVER['HTTP_USER_AGENT'],
+		NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+	);
    nfw_block();
 }
 
 // WordPress Aplication Passwords
 if (! empty($nfw_['nfw_options']['no_appswd']) && strpos( $_SERVER['SCRIPT_NAME'], '/wp-admin/authorize-application.php' ) !== FALSE ) {
-	nfw_log('Access to WordPress Application Passwords', $_SERVER['SCRIPT_NAME'], 2, 0);
+
+	$nfw_['incidentID'] = NinjaFirewall_log::write(
+		'Access to WordPress Application Passwords',
+		$_SERVER['SCRIPT_NAME'],
+		NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+	);
 	nfw_block();
 }
 
 if (! empty($nfw_['nfw_options']['no_post_themes']) && $_SERVER['REQUEST_METHOD'] == 'POST' && strpos($_SERVER['SCRIPT_NAME'], $nfw_['nfw_options']['no_post_themes']) !== FALSE ) {
-	nfw_log('POST request in the themes folder', $_SERVER['SCRIPT_NAME'], 2, 0);
+
+	$nfw_['incidentID'] = NinjaFirewall_log::write(
+		'POST request in the themes folder',
+		$_SERVER['SCRIPT_NAME'],
+		NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+	);
    nfw_block();
 }
 
 if (! empty($nfw_['nfw_options']['wp_dir']) && preg_match( '`' . $nfw_['nfw_options']['wp_dir'] . '`', $_SERVER['SCRIPT_NAME']) ) {
-	nfw_log('Forbidden direct access to PHP script', $_SERVER['SCRIPT_NAME'], 2, 0);
+
+	$nfw_['incidentID'] = NinjaFirewall_log::write(
+		'Forbidden direct access to PHP script',
+		$_SERVER['SCRIPT_NAME'],
+		NFWLOG_HIGH, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+	);
    nfw_block();
 }
 
@@ -573,44 +654,6 @@ function nfw_is_https() {
 
 // =====================================================================
 
-function nfw_check_ip() {
-
-	if ( defined('NFW_REMOTE_ADDR') ) { return; }
-
-	global $nfw_;
-
-	if (! isset( $_SERVER['REMOTE_ADDR'] ) ) { $_SERVER['REMOTE_ADDR'] = '127.0.0.1'; }
-	if (strpos($_SERVER['REMOTE_ADDR'], ',') !== false) {
-		// Ensure we have a proper and single IP (a user may use the .htninja file
-		// to redirect HTTP_X_FORWARDED_FOR, which may contain more than one IP,
-		// to REMOTE_ADDR):
-		$nfw_['match'] = array_map('trim', @explode(',', $_SERVER['REMOTE_ADDR']));
-		foreach($nfw_['match'] as $nfw_['m']) {
-			if ( filter_var($nfw_['m'], FILTER_VALIDATE_IP) )  {
-				define( 'NFW_REMOTE_ADDR', $nfw_['m']);
-				break;
-			}
-		}
-	}
-	if (! defined('NFW_REMOTE_ADDR') ) {
-		define('NFW_REMOTE_ADDR', htmlspecialchars($_SERVER['REMOTE_ADDR']) );
-	}
-
-	if ( filter_var( NFW_REMOTE_ADDR, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6 ) ) {
-		define( 'NFW_REMOTE_ADDR_IPV6', true );
-	} else {
-		define( 'NFW_REMOTE_ADDR_IPV6', false );
-	}
-
-	if (filter_var( NFW_REMOTE_ADDR, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-		define( 'NFW_REMOTE_ADDR_PRIVATE', false );
-	} else {
-		define( 'NFW_REMOTE_ADDR_PRIVATE', true );
-	}
-}
-
-// =====================================================================
-
 function nfw_check_upload() {
 
 	if ( defined('NFW_STATUS') ) { return; }
@@ -628,7 +671,12 @@ function nfw_check_upload() {
          $tmp .= $f_uploaded[$key]['name'] . ' (' . number_format($f_uploaded[$key]['size']) . ' bytes) ';
       }
       if ( $tmp ) {
-			nfw_log('Blocked file upload attempt', rtrim($tmp, ' '), 3, 0);
+
+			$nfw_['incidentID'] = NinjaFirewall_log::write(
+				'Blocked file upload attempt',
+				rtrim( $tmp, ' '),
+				NFWLOG_CRITICAL, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 			nfw_block();
 		}
 	} else {
@@ -640,14 +688,24 @@ function nfw_check_upload() {
 				if ( preg_match('`^X5O!P%@AP' . '\[4\\\PZX54\(P\^\)7CC\)7}\$EIC' .
 				                'AR-STANDARD-ANTIVI' . 'RUS-TEST-FILE!\$H' . '\+H\*' .
 				                '[\x09\x10\x13\x20\x1A]*`', $data) ) {
-					nfw_log('EICAR Standard Anti-Virus Test File blocked', $f_uploaded[$key]['name'] . ' (' . number_format($f_uploaded[$key]['size']) . ' bytes)', 3, 0);
+
+					$nfw_['incidentID'] = NinjaFirewall_log::write(
+						'EICAR Standard Anti-Virus Test File blocked',
+						$f_uploaded[$key]['name'] .' ('. number_format($f_uploaded[$key]['size']) .' bytes)',
+						NFWLOG_CRITICAL, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+					);
 					nfw_block();
 				}
 			}
 
 			if (! defined('NFW_NO_MIMECHECK') && isset( $f_uploaded[$key]['type'] ) && ! preg_match('/\/.*\bphp\d?\b/i', $f_uploaded[$key]['type']) &&
 			preg_match('/\.ph(?:p([34x7]|5\d?)?|t(ml)?)(?:\.|$)/', $f_uploaded[$key]['name']) ) {
-				nfw_log('Blocked file upload attempt (MIME-type mismatch)', $f_uploaded[$key]['name'] .' != '. $f_uploaded[$key]['type'], 3, 0);
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					'Blocked file upload attempt (MIME-type mismatch)',
+					"{$f_uploaded[$key]['name']} != {$f_uploaded[$key]['type']}",
+					NFWLOG_CRITICAL, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+				);
 				nfw_block();
 			}
 
@@ -679,7 +737,12 @@ function nfw_check_upload() {
 			} else {
 				$size = number_format( $f_uploaded[$key]['size'] );
 			}
-			nfw_log('File upload detected, no action taken' . $tmp , "{$f_uploaded[$key]['name']} ($size bytes)", 5, 0);
+
+			$nfw_['incidentID'] = NinjaFirewall_log::write(
+				'File upload detected, no action taken' . $tmp ,
+				"{$f_uploaded[$key]['name']} ($size bytes)",
+				NFWLOG_UPLOAD, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 		}
 	}
 }
@@ -1054,11 +1117,26 @@ function nfw_matching( $where, $key, $nfw_rules, $rules, $subid, $id, $nfw_optio
 			return 1;
 		} else {
 			if ( isset( $nfw_['flattened'][$where][$key] ) ) {
-				nfw_log($rules['why'], $where .':' . $key . ' = ' . $nfw_['flattened'][$where][$key], $rules['lev'], $id);
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					$rules['why'],
+					"$where:$key = {$nfw_['flattened'][$where][$key]}",
+					$rules['lev'], $id, $nfw_['nfw_options'], $nfw_['log_dir']
+				);
 			} elseif ( isset( $RAW_POST ) ) {
-				nfw_log($rules['why'], $where .':' . $key . ' = ' . $RAW_POST, $rules['lev'], $id);
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					$rules['why'],
+					"$where:$key = $RAW_POST",
+					$rules['lev'], $id, $nfw_['nfw_options'], $nfw_['log_dir']
+				);
 			} else {
-				nfw_log($rules['why'], $where .':' . $key . ' = ' . $GLOBALS['_'.$where][$key], $rules['lev'], $id);
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					$rules['why'],
+					"$where:$key = {$GLOBALS['_'.$where][$key]}",
+					$rules['lev'], $id, $nfw_['nfw_options'], $nfw_['log_dir']
+				);
 			}
 			nfw_block();
 		}
@@ -1343,6 +1421,8 @@ function nfw_check_b64( $key, $string ) {
 		return;
 	}
 
+	global $nfw_;
+
 	$whitelist = [
 		'fpd_print_order',		// Fancy Product Designer
 		'g-recaptcha-response'	// reCAPTCHA
@@ -1363,7 +1443,12 @@ function nfw_check_b64( $key, $string ) {
 			strpos($_SERVER['SCRIPT_NAME'], '/jetpack-temp/jp-helper-') !== FALSE ) {
 			return;
 		}
-		nfw_log('BASE64-encoded injection', 'POST:' . $key . ' = ' . $string, '3', 0 );
+
+		$nfw_['incidentID'] = NinjaFirewall_log::write(
+			'BASE64-encoded injection',
+			"POST:$key = $string",
+			NFWLOG_CRITICAL, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+		);
 		nfw_block();
 	}
 }
@@ -1402,12 +1487,22 @@ function nfw_sanitise( $str, $how, $msg ) {
 		}
 		if (! empty($nfw_['nfw_options']['debug']) ) {
 			if ($str2 != $str) {
-				nfw_log('Sanitising user input', $msg . ': ' . $str, 7, 0); // '7' for debugging mode only
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					'Sanitising user input',
+					"$msg: $str",
+					NFWLOG_DEBUG, 0, $nfw_['nfw_options'], $nfw_['log_dir']		// '7' for debugging mode only
+				);
 			}
 			return $str;
 		}
 		if ($str2 != $str) {
-			nfw_log('Sanitising user input', $msg . ': ' . $str, 6, 0);
+
+			$nfw_['incidentID'] = NinjaFirewall_log::write(
+				'Sanitising user input',
+				"$msg: $str",
+				NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 		}
 		return $str2;
 
@@ -1422,7 +1517,12 @@ function nfw_sanitise( $str, $how, $msg ) {
 			}
 			if ($occ) {
 				unset($str[$key]);
-				nfw_log('Sanitising user input', $msg . ': ' . $key, 6, 0);
+
+				$nfw_['incidentID'] = NinjaFirewall_log::write(
+					'Sanitising user input',
+					"$msg: $key",
+					NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+				);
 			}
 			$str[$key2] = nfw_sanitise($value, $how, $msg);
 		}
@@ -1458,13 +1558,13 @@ function nfw_block() {
 		$nfw_['nfw_options']['ret_code'] = 403;
 	}
 
-	if ( empty( $nfw_['num_incident'] ) ) {
-		$nfw_['num_incident'] = '000000';
+	if ( empty( $nfw_['incidentID'] ) ) {
+		$nfw_['incidentID'] = '000000';
 	}
 
 	$tmp = str_replace(
 		'%%NUM_INCIDENT%%',
-		$nfw_['num_incident'],
+		$nfw_['incidentID'],
 		base64_decode( $nfw_['nfw_options']['blocked_msg'] )
 	);
 
@@ -1496,106 +1596,10 @@ function nfw_block() {
 	exit;
 }
 
-// =====================================================================
-
-function nfw_log($loginfo, $logdata, $loglevel, $ruleid) {
-
-	if ( defined('NFW_STATUS') ) { return; }
-
-	global $nfw_;
-
-	$nfw_['num_incident'] = mt_rand(1000000, 9000000);
-
-	if ( $loglevel == 6) {
-		$http_ret_code = '200';
-	} else {
-		if (! empty($nfw_['nfw_options']['debug']) ) {
-			$loglevel = 7;
-			$http_ret_code = '200';
-		} else {
-			$http_ret_code = $nfw_['nfw_options']['ret_code'];
-		}
-	}
-
-	if ( defined('NFW_MAXPAYLOAD') ) {
-		$NFW_MAXPAYLOAD = (int) NFW_MAXPAYLOAD;
-	} else {
-		$NFW_MAXPAYLOAD = 200;
-	}
-   if (strlen($logdata) > $NFW_MAXPAYLOAD ) {
-		$logdata = mb_substr($logdata, 0, $NFW_MAXPAYLOAD , 'utf-8') . '...';
-	}
-	$res = '';
-	$string = str_split($logdata);
-	foreach ( $string as $char ) {
-		if ( ord($char) < 32 || ord($char) > 126 ) {
-			$res .= '%' . bin2hex($char);
-		} else {
-			$res .= $char;
-		}
-	}
-
-	$cur_month = date('Y-m');
-
-	$stat_file = $nfw_['log_dir']. '/stats_' . $cur_month . '.php';
-	$log_file = $nfw_['log_dir']. '/firewall_' . $cur_month . '.php';
-
-	if ( is_file( $stat_file ) ) {
-		$nfw_stat = file_get_contents( $stat_file, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES );
-		$nfw_stat = str_replace( '<?php exit; ?>', '', $nfw_stat );
-	} else {
-		$nfw_stat = '0:0:0:0:0:0:0:0:0:0';
-	}
-	$nfw_stat_arr = explode(':', $nfw_stat . ':');
-	++$nfw_stat_arr[$loglevel];
-
-	@file_put_contents(
-		$stat_file,
-		"<?php exit; ?>{$nfw_stat_arr[0]}:{$nfw_stat_arr[1]}:" .
-		"{$nfw_stat_arr[2]}:{$nfw_stat_arr[3]}:{$nfw_stat_arr[4]}:" .
-		"{$nfw_stat_arr[5]}:{$nfw_stat_arr[6]}:{$nfw_stat_arr[7]}:" .
-		"{$nfw_stat_arr[8]}:{$nfw_stat_arr[9]}",
-		LOCK_EX
-	);
-
-	if (! is_file( $log_file ) ) {
-		$tmp = '<?php exit; ?>' . "\n";
-	} else {
-		$tmp = '';
-	}
-
-	if (! defined('NFW_REMOTE_ADDR') ) { define('NFW_REMOTE_ADDR', $_SERVER['REMOTE_ADDR']); }
-
-	// Which encoding to use?
-	if ( defined('NFW_LOG_ENCODING') ) {
-		if ( NFW_LOG_ENCODING == 'b64') {
-			$encoding = '[b64:'. base64_encode( $res ) .']';
-		} elseif ( NFW_LOG_ENCODING == 'none' ) {
-			$encoding = '['. $res .']';
-		} else {
-			$unp = unpack('H*', $res);
-			$encoding = '[hex:'. array_shift( $unp ) .']';
-		}
-	} else {
-		$unp = unpack('H*', $res);
-		$encoding = '[hex:'. array_shift( $unp ) .']';
-	}
-
-	$elapse = nfw_fc_metrics('stop', $nfw_['fw_starttime']);
-	@file_put_contents( $log_file,
-		$tmp . '[' . time() . '] ' . '[' . $elapse .'] '.
-      '[' . $_SERVER['SERVER_NAME'] . '] ' . '[#' . $nfw_['num_incident'] . '] ' .
-      '[' . $ruleid . '] ' .
-      '[' . $loglevel . '] ' . '[' . nfw_anonymize_ip() . '] ' .
-      '[' . $http_ret_code . '] ' . '[' . $_SERVER['REQUEST_METHOD'] . '] ' .
-      '[' . $_SERVER['SCRIPT_NAME'] . '] ' . '[' . $loginfo . '] ' .
-      $encoding . "\n", FILE_APPEND | LOCK_EX );
-}
-
 // ===================================================================== 2023-05-16
 // Return the time using hrtime (PHP >= 7.3) or microtime.
 
-function nfw_fc_metrics( $action = 'start', $starttime = 0 ) {
+function nfw_fc_metrics( $action = 'start') {
 
 	if ( function_exists('hrtime') ) {
 		$metrics = 'hrtime';
@@ -1608,28 +1612,18 @@ function nfw_fc_metrics( $action = 'start', $starttime = 0 ) {
 		return $metrics(true);
 	}
 
-	// Stop the chrono and return the formatted elapsed time
-	if ( $metrics == 'hrtime') {
-		return number_format( ( $metrics(true) - $starttime ) / 1000000000, 5 );
-	} else {
-		return number_format( $metrics(true) - $starttime, 5 );
-	}
-}
-
-// ===================================================================== 2023-05-16
-// Anonymize an IP address by hidding it last 3 characters.
-
-function nfw_anonymize_ip() {
-
 	global $nfw_;
 
-	if (! empty( $nfw_['nfw_options']['anon_ip'] ) &&
-		NFW_REMOTE_ADDR_PRIVATE === false ) {
-
-		return substr( NFW_REMOTE_ADDR, 0, -3 ) .'xxx';
+	if ( empty( $nfw_['fw_starttime'] ) ) {
+		return 0;
 	}
 
-	return NFW_REMOTE_ADDR;
+	// Stop the chrono and return the formatted elapsed time
+	if ( $metrics == 'hrtime') {
+		return number_format( ( $metrics(true) - $nfw_['fw_starttime'] ) / 1000000000, 5 );
+	} else {
+		return number_format( $metrics(true) - $nfw_['fw_starttime'], 5 );
+	}
 }
 
 // =====================================================================
@@ -1719,14 +1713,37 @@ function nfw_bfd($where) {
 				} else {
 					$where = 'XML-RPC API';
 				}
-				nfw_log('Brute-force attack detected on ' . $where, 'enabling HTTP authentication for ' . $bf_bantime . 'mn', 3, 0);
-				if (! empty($bf_authlog) ) {
-					if (defined('LOG_AUTHPRIV') ) { $tmp = LOG_AUTHPRIV; }
-					else { $tmp = LOG_AUTH;	}
-					@openlog('ninjafirewall', LOG_NDELAY|LOG_PID, $tmp);
-					@syslog(LOG_INFO, 'Possible brute-force attack from '. $_SERVER['REMOTE_ADDR'] .
+				if ( $bf_type == 0 ) {
+
+					$nfw_['incidentID'] = NinjaFirewall_log::write(
+						'Brute-force attack detected on ' . $where,
+						'enabling HTTP authentication for ' . $bf_bantime . 'mn',
+						NFWLOG_CRITICAL, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+					);
+				} else {
+
+					$nfw_['incidentID'] = NinjaFirewall_log::write(
+						'Brute-force attack detected on ' . $where,
+						'enabling CAPTCHA for ' . $bf_bantime . 'mn',
+						NFWLOG_CRITICAL, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+					);
+				}
+				/**
+				 * Write to the AUTH log.
+				 */
+				if (! empty( $bf_authlog ) ) {
+					if (! defined('NFW_REMOTE_ADDR') ) {
+						NinjaFirewall_IP::check_ip( $nfw_['nfw_options'] );
+					}
+					if ( defined('LOG_AUTHPRIV') ) {
+						$tmp = LOG_AUTHPRIV;
+					} else {
+						$tmp = LOG_AUTH;
+					}
+					@ openlog('ninjafirewall', LOG_NDELAY|LOG_PID, $tmp);
+					@ syslog(LOG_INFO, 'Possible brute-force attack from '. NFW_REMOTE_ADDR .
 							' on '. $_SERVER['SERVER_NAME'] .' ('. $where .'). Blocking access for ' . $bf_bantime . 'mn.');
-					@closelog();
+					@ closelog();
 				}
 				nfw_check_auth($auth_name, $auth_pass, $auth_msgtxt, $bf_rand, $b64, $bf_allow_bot, $bf_type, $captcha_text, $bf_nosig);
 				return;
@@ -1775,7 +1792,12 @@ function nfw_is_bot( $block = '') {
 			header('Cache-Control: no-cache, no-store, must-revalidate');
 			header('Expires: 0');
 			$nfw_['nfw_options']['ret_code'] = '404';
-			nfw_log( $block, 'bot detection is enabled', 1, 0 );
+
+			$nfw_['incidentID'] = NinjaFirewall_log::write(
+				$block,
+				'bot detection is enabled',
+				NFWLOG_MEDIUM, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+			);
 			NinjaFirewall_session::delete();
 			exit('404 Not Found');
 		}

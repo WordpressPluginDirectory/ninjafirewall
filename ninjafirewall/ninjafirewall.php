@@ -3,7 +3,7 @@
 Plugin Name: NinjaFirewall (WP Edition)
 Plugin URI: https://nintechnet.com/
 Description: A true Web Application Firewall to protect and secure WordPress.
-Version: 4.8.3
+Version: 4.8.4
 Author: The Ninja Technologies Network
 Author URI: https://nintechnet.com/
 License: GPLv3 or later
@@ -11,7 +11,7 @@ Network: true
 Text Domain: ninjafirewall
 Domain Path: /languages
 */
-define('NFW_ENGINE_VERSION', '4.8.3');
+define('NFW_ENGINE_VERSION', '4.8.4');
 /*
  +=====================================================================+
  |    _   _ _        _       _____ _                        _ _        |
@@ -73,9 +73,27 @@ if ( is_file( NFW_LOG_DIR .'/nfwlog/phpsession') ) {
 	require_once __DIR__ .'/lib/class-nfw-session.php';
 }
 
+if (! defined( 'NFW_REMOTE_ADDR') ) {
+	/**
+	 * Error: the firewall isn't loaded.
+	 */
+	require_once __DIR__ .'/lib/class-ip.php';
+	NinjaFirewall_IP::check_ip( ['ac_ip' => 1 ] );
+}
+
 /**
- * Those classes could be already loaded by the firewall (if enabled).
+ * Those classes and constants could be already loaded/defined by the firewall (if enabled).
  */
+if ( ! defined('NFWLOG_DEBUG') ) {
+	define('NFWLOG_MEDIUM', 1);
+	define('NFWLOG_HIGH', 2);
+	define('NFWLOG_CRITICAL', 3);
+	define('NFWLOG_POSTDETECT', 4);
+	define('NFWLOG_UPLOAD', 5);
+	define('NFWLOG_INFO', 6);
+	define('NFWLOG_DEBUG', 7);
+}
+require_once __DIR__ .'/lib/class-firewall-log.php';
 require_once __DIR__ . '/lib/class-helpers.php';
 require_once __DIR__ .'/lib/class_mail.php';
 
@@ -83,13 +101,9 @@ require __DIR__ . '/lib/scheduled_tasks.php';
 require __DIR__ . '/lib/utils.php';
 require __DIR__ . '/lib/events.php';
 
-if (! defined( 'NFW_REMOTE_ADDR') ) {
-	nfw_select_ip();
-}
-
 add_action( 'nfwgccron', 'nfw_garbage_collector' );
 
-/* ------------------------------------------------------------------ */			//s1:h0
+/* ------------------------------------------------------------------ */
 
 function nfw_activate() {
 
@@ -561,12 +575,19 @@ function nfw_login_hook( $user_login, $user ) {
 	}
 
 	// Are we supposed to send an alert?
-	if (! empty($nfw_options['a_0']) ) {
+	if (! empty( $nfw_options['a_0'] ) ) {
 		if ( ( $nfw_options['a_0'] == 1 && isset( $admin_flag ) ) || $nfw_options['a_0'] == 2 ) {
+
 			nfw_send_loginemail( $user_login, $whoami );
-			// Write event to log?
-			if (! empty($nfw_options['a_41']) ) {
-				nfw_log2('Logged in user', "{$user_login} ({$whoami})", 6, 0);
+			/**
+			 * Write event to log.
+			 */
+			if (! empty( $nfw_options['a_41'] ) ) {
+				NinjaFirewall_log::write(
+					'Logged in user',
+					"{$user_login} ({$whoami})",
+					NFWLOG_INFO, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+				);
 			}
 		}
 	}
@@ -1040,27 +1061,6 @@ function nf_sub_loginprot() {
 
 	require plugin_dir_path(__FILE__) . 'lib/login_protection.php';
 
-}
-
-/* ------------------------------------------------------------------ */
-
-function nfw_log2($loginfo, $logdata, $loglevel, $ruleid) {
-
-	// Write incident to the firewall log
-	require plugin_dir_path(__FILE__) . 'lib/nfw_log.php'; // Can be called multiple times
-}
-
-function nfw_anonymize_ip2( $ip ) {
-
-	$nfw_options = nfw_get_option( 'nfw_options' );
-
-	if (! empty( $nfw_options['anon_ip'] ) &&
-		filter_var( $ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE ) ) {
-
-		return substr( $ip, 0, -3 ) .'xxx';
-	}
-
-	return $ip;
 }
 
 /* ------------------------------------------------------------------ */

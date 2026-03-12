@@ -255,7 +255,11 @@ function nfw_sys_events() {
 		 * Write to the log.
 		 */
 		if (! empty($nfw_options['a_41']) ) {
-			nfw_log2( $alert_action .' by '. $current_user->user_login, $alert_item, 6, 0 );
+			NinjaFirewall_log::write(
+				"$alert_action by {$current_user->user_login}",
+				$alert_item,
+				NFWLOG_INFO, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+			);
 		}
 	}
 }

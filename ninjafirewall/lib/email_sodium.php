@@ -164,7 +164,11 @@ function nfw_sodium_decrypt( $hex ) {
 		nfw_update_option('nfw_options', $nfw_options );
 
 		$subject = __('Email removal confirmation', 'ninjafirewall');
-		nfw_log2( 'WordPress: ' . $subject, "User: {$data[0]}", 6, 0);
+		NinjaFirewall_log::write(
+			"WordPress: $subject",
+			"User: {$data[0]}",
+			NFWLOG_INFO, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+		);
 		$subject = "[NinjaFirewall] $subject";
 		$message = __('Your email address was removed from the "Event Notifications" option.', 'ninjafirewall') . "\n\n";
 		$message.= __('Blog:', 'ninjafirewall') .' '. home_url('/') . "\n";

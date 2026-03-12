@@ -224,7 +224,12 @@ function nf_wp_insert_post_empty_content( $maybe_empty, $postarr ) {
 		}
 
 		$subject = __('Blocked post/page edition attempt', 'ninjafirewall');
-		nfw_log2('WordPress: ' . $subject, "post_content: $post_content", 3, 0);
+
+		NinjaFirewall_log::write(
+			"WordPress: $subject",
+			"post_content: $post_content",
+			NFWLOG_CRITICAL, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+		);
 
 		/**
 		 * Backtrace.
@@ -298,7 +303,12 @@ function nf_pre_delete_post( $delete, $post, $force_delete ) {
 			}
 
 			$subject = __('Blocked post/page deletion attempt', 'ninjafirewall');
-			nfw_log2('WordPress: ' . $subject, "post ID: {$post->ID}", 3, 0);
+
+			NinjaFirewall_log::write(
+				"WordPress: $subject",
+				"post ID: {$post->ID}",
+				NFWLOG_CRITICAL, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+			);
 
 			/**
 			 * Backtrace.
@@ -389,16 +399,26 @@ function nfw_delete_user( $user_id ) {
 	if ( current_user_can('delete_users') || empty( $nfw_options['disallow_deletion'] ) ||
 		empty( $nfw_options['enabled'] ) ) {
 
-		// Log and allow the request
-		nfw_log2('Deleting user', "User: {$user_data->user_login}, ID: $user_id", 6, 0 );
+		/**
+		 * Log and allow the request.
+		 */
+		NinjaFirewall_log::write(
+			"Deleting user",
+			"User: {$user_data->user_login}, ID: $user_id",
+			NFWLOG_INFO, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+		);
 		return;
 	}
 
+	$subject = __('Blocked user deletion attempt', 'ninjafirewall');
 	/**
 	 * Write to log.
 	 */
-	$subject = __('Blocked user deletion attempt', 'ninjafirewall');
-	nfw_log2('WordPress: ' . $subject, "User: {$user_data->user_login}, ID: $user_id", 3, 0 );
+	NinjaFirewall_log::write(
+		"WordPress: $subject",
+		"User: {$user_data->user_login}, ID: $user_id",
+		NFWLOG_CRITICAL, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+	);
 
 	/**
 	 * Backtrace.
@@ -452,11 +472,15 @@ function nfw_account_creation( $user_login ) {
 		return $user_login;
 	}
 
+	$subject = __('Blocked user account creation', 'ninjafirewall');
 	/**
 	 * Write to log.
 	 */
-	$subject = __('Blocked user account creation', 'ninjafirewall');
-	nfw_log2( "WordPress: {$subject}", "Username: {$user_login}", 3, 0);
+	NinjaFirewall_log::write(
+		"WordPress: {$subject}",
+		"Username: {$user_login}",
+		NFWLOG_CRITICAL, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+	);
 
 	/**
 	 * Backtrace.
@@ -744,38 +768,6 @@ function nfw_log_error( $message ) {
 
 // ---------------------------------------------------------------------
 
-function nfw_select_ip() {
-
-	/**
-	 * Check which IP we are supposed to use (set up by the user from
-	 * the Access Control > Source IP page (WP+ Edition only).
-	 *
-	 * Note: Although this was already done by the firewall,
-	 * we check it here again in the case the firewall is not loaded.
-	 */
-
-	/**
-	 * Some command line cron jobs may return an `Undefined array key "REMOTE_ADDR"` warning.
-	 */
-	if (! isset( $_SERVER['REMOTE_ADDR'] ) ) {
-		$_SERVER['REMOTE_ADDR'] = '127.0.0.1';
-	}
-	if ( strpos( $_SERVER['REMOTE_ADDR'], ',') !== false ) {
-		$nfw_match = array_map('trim', @explode(',', $_SERVER['REMOTE_ADDR'] ) );
-		foreach( $nfw_match as $nfw_m ) {
-			if ( filter_var( $nfw_m, FILTER_VALIDATE_IP ) )  {
-				define('NFW_REMOTE_ADDR', $nfw_m );
-				break;
-			}
-		}
-	}
-	if (! defined('NFW_REMOTE_ADDR') ) {
-		define('NFW_REMOTE_ADDR', htmlspecialchars( $_SERVER['REMOTE_ADDR'] ) );
-	}
-}
-
-// ---------------------------------------------------------------------
-
 function nfw_admin_notice() {
 
 	// Warn about Site Health if needed
@@ -888,7 +880,13 @@ function nfw_query( $query ) {
 		}
 		NinjaFirewall_session::delete();
 		$query->set('author_name', '0');
-		nfw_log2('User enumeration scan (author archives)', $tmp, 2, 0);
+
+		NinjaFirewall_log::write(
+			"User enumeration scan (author archives)",
+			$tmp,
+			NFWLOG_HIGH, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+		);
+
 		wp_safe_redirect( home_url('/') );
 		exit;
 	}
@@ -979,7 +977,13 @@ function nfwhook_rest_authentication_errors( $res ) {
 	}
 
 	if (! empty( $nfw_options['no_restapi'] ) ) {
-		nfw_log2('WordPress: Blocked access to the WP REST API', $_SERVER['REQUEST_URI'], 2, 0);
+
+		NinjaFirewall_log::write(
+			'WordPress: Blocked access to the WP REST API',
+			$_SERVER['REQUEST_URI'],
+			NFWLOG_HIGH, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+		);
+
 		return new WP_Error(
 			'nfw_rest_api_access_restricted',
 			esc_html__('Forbidden access', 'ninjafirewall'),
@@ -1010,7 +1014,13 @@ function nfwhook_rest_request_before_callbacks( $res, $hnd, $req ) {
 	if (! empty( $nfw_options['enum_restapi']) ) {
 
 		if ( strpos( $req->get_route(), '/wp/v2/users') !== false && ! current_user_can('list_users') ) {
-			nfw_log2('User enumeration scan (WP REST API)', $_SERVER['REQUEST_URI'], 2, 0);
+
+			NinjaFirewall_log::write(
+				'User enumeration scan (REST API)',
+				$_SERVER['REQUEST_URI'],
+				NFWLOG_HIGH, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+			);
+
 			return new WP_Error('nfw_rest_api_access_restricted', __('Forbidden access', 'ninjafirewall'), array('status' => $nfw_options['ret_code']) );
 		}
 	}
@@ -1171,9 +1181,10 @@ function nf_check_dbdata() {
 		 * Log event if required.
 		 */
 		if (! empty( $nfw_options['a_41'] ) ) {
-			nfw_log2(
+			NinjaFirewall_log::write(
 				__('Database changes detected', 'ninjafirewall'),
-				__('administrator account', 'ninjafirewall'), 4, 0
+				__('administrator account', 'ninjafirewall'),
+				NFWLOG_POSTDETECT, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
 			);
 		}
 	}
@@ -1338,7 +1349,12 @@ function nfwhook_user_meta( $id, $key, $value ) {
 			$value = mb_substr( $value, 0, 200, 'utf-8') . '...';
 		}
 		$subject = __('Blocked privilege escalation attempt', 'ninjafirewall');
-		nfw_log2('WordPress: '. $subject, "$key: $value", 3, 0 );
+
+		NinjaFirewall_log::write(
+			"WordPress: $subject",
+			"$key: $value",
+			NFWLOG_CRITICAL, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+		);
 
 		if (! empty( $user_info->user_login ) ) {
 			$username = "{$user_info->user_login}, ID: $id";
@@ -1546,8 +1562,14 @@ function nf_monitor_options( $value, $option, $old_value ) {
 	// Send a notification to the admin:
 	nf_monitor_options_alert( $option, $value, $old_value, 'settings');
 
-	// Log the request:
-	nfw_log2('Blocked attempt to modify WordPress settings', "option: {$option}, value: {$value}", 3, 0);
+	/**
+	 * Log the request.
+	 */
+	NinjaFirewall_log::write(
+		'Blocked attempt to modify WordPress settings',
+		"option: $option, value: $value",
+		NFWLOG_CRITICAL, 0, $nfw_options, NFW_LOG_DIR .'/nfwlog'
+	);
 
 	// Since 4.0.3 we don't close the connection anymore but
 	// we block the modification by returning the previous value

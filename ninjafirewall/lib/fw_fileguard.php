@@ -38,12 +38,15 @@ function fw_fileguard() {
 				/**
 				 * Did we check it already ?
 				 */
-				if (! is_file( $nfw_['log_dir'] .'/cache/fg_'. $nfw_['nfw_options']['fg_stat']['ino'] .'.php') ) {
+				if (! is_file("{$nfw_['log_dir']}/cache/fg_{$nfw_['nfw_options']['fg_stat']['ino']}.php") ) {
 					/**
 					 * Log it.
 					 */
-					nfw_log('Access to a script modified/created less than '.
-						$nfw_['nfw_options']['fg_mtime'] .' hour(s) ago', $_SERVER['SCRIPT_FILENAME'], 6, 0 );
+					NinjaFirewall_log::write(
+						"Access to a script modified/created less than {$nfw_['nfw_options']['fg_mtime']} hour(s) ago",
+						$_SERVER['SCRIPT_FILENAME'],
+						NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+					);
 					/**
 					 * Send the notification.
 					 */
@@ -67,7 +70,12 @@ function fw_fileguard() {
 				 * Undocumented: if 'NFW_FG_BLOCK' is defined in the .htninja, we block the request.
 				 */
 				if ( defined('NFW_FG_BLOCK') ) {
-					nfw_log('File Guard: blocked request', $_SERVER['SCRIPT_FILENAME'], 6, 0 );
+
+					$nfw_['incidentID'] = NinjaFirewall_log::write(
+						'File Guard: blocked request',
+						$_SERVER['SCRIPT_FILENAME'],
+						NFWLOG_INFO, 0, $nfw_['nfw_options'], $nfw_['log_dir']
+					);
 					nfw_block();
 				}
 			}
