@@ -14,7 +14,7 @@
  | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
  | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
  | GNU General Public License for more details.                        |
- +---------------------------------------------------------------------+ i18n+ / sa / 2
+ +---------------------------------------------------------------------+
 */
 
 if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
@@ -22,7 +22,7 @@ if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
 // NFUPDATESDO: scheduled update (1), installation (2) or plugin update (3 - deprecated since v3.8)?
 // > Skip all HTML code below:
 if (defined('NFUPDATESDO') ) {
-	include __DIR__ .'/security_rules_update.php';
+	include __DIR__ .'/settings_security_rules_update.php';
 	return;
 }
 
@@ -52,12 +52,12 @@ if ( $_REQUEST['tab'] == 'editor' ) {
 
 	<!-- Security rules updates -->
 	<div id="updates-options"<?php echo $updates_div ?>>
-		<?php include __DIR__ .'/security_rules_update.php'; ?>
+		<?php include __DIR__ .'/settings_security_rules_update.php'; ?>
 	</div>
 
 	<!-- Security rules editor -->
 	<div id="editor-options"<?php echo $editor_div ?>>
-		<?php include __DIR__ .'/security_rules_editor.php'; ?>
+		<?php include __DIR__ .'/settings_security_rules_editor.php'; ?>
 	</div>
 
 </div>

@@ -17,47 +17,52 @@
  +---------------------------------------------------------------------+ i18n+ / sa / 2
 */
 
-if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
+if (! defined('NFW_ENGINE_VERSION') ) {
+	die('Forbidden');
+}
 
 // Block immediately if user is not allowed
-nf_not_allowed( 'block', __LINE__ );
+nf_not_allowed('block', __LINE__ );
 
-$nfw_rules = nfw_get_option( 'nfw_rules' );
+$nfw_rules = nfw_get_option('nfw_rules');
 $is_update = 0;
 
-if ( isset($_POST['sel_e_r']) ) {
-	if ( empty($_POST['nfwnonce']) || ! wp_verify_nonce($_POST['nfwnonce'], 'editor_save') ) {
+if ( isset( $_POST['sel_e_r'] ) ) {
+	if ( empty( $_POST['nfwnonce'] ) || ! wp_verify_nonce( $_POST['nfwnonce'], 'editor_save') ) {
 		wp_nonce_ays('editor_save');
 	}
-	if ( $_POST['sel_e_r'] < 1 ) {
+	$rule_id = absint( $_POST['sel_e_r'] );
+	if ( $rule_id < 1 ) {
 		echo '<div class="error notice is-dismissible"><p>' . __('Error: you did not select a rule to disable.', 'ninjafirewall') .'</p></div>';
-	} else if ( ( $_POST['sel_e_r'] == 2 ) || ( $_POST['sel_e_r'] > 499 ) && ( $_POST['sel_e_r'] < 600 ) ) {
+	} else if ( ( $rule_id == 2 ) || ( $rule_id > 499 && $rule_id < 600 ) ) {
 		echo '<div class="error notice is-dismissible"><p>' . __('Error: to change this rule, use the "Firewall Policies" menu.', 'ninjafirewall') .'</p></div>';
-	} else if (! isset( $nfw_rules[$_POST['sel_e_r']] ) ) {
+	} else if (! isset( $nfw_rules[ $rule_id ] ) ) {
 		echo '<div class="error notice is-dismissible"><p>' . __('Error: this rule does not exist.', 'ninjafirewall') .'</p></div>';
-	} elseif ($_POST['sel_e_r'] != 999) {
-		$nfw_rules[$_POST['sel_e_r']]['ena'] = 0;
+	} elseif ( $rule_id != 999 ) {
+		$nfw_rules[ $rule_id ]['ena'] = 0;
 		$is_update = 1;
-		echo '<div class="updated notice is-dismissible"><p>' . sprintf( __('Rule ID %s has been disabled.', 'ninjafirewall'), htmlentities($_POST['sel_e_r']) ) .'</p></div>';
+		echo '<div class="updated notice is-dismissible"><p>' . sprintf( esc_html__('Rule ID %s has been disabled.', 'ninjafirewall'), $rule_id ) .'</p></div>';
 	}
-} else if ( isset($_POST['sel_d_r']) ) {
-	if ( empty($_POST['nfwnonce']) || ! wp_verify_nonce($_POST['nfwnonce'], 'editor_save') ) {
+
+} else if ( isset( $_POST['sel_d_r'] ) ) {
+	if ( empty( $_POST['nfwnonce'] ) || ! wp_verify_nonce( $_POST['nfwnonce'], 'editor_save') ) {
 		wp_nonce_ays('editor_save');
 	}
-	if ( $_POST['sel_d_r'] < 1 ) {
+	$rule_id = absint( $_POST['sel_d_r'] );
+	if ( $rule_id < 1 ) {
 		echo '<div class="error notice is-dismissible"><p>' . __('Error: you did not select a rule to enable.', 'ninjafirewall') .'</p></div>';
-	} else if ( ( $_POST['sel_d_r'] == 2 ) || ( $_POST['sel_d_r'] > 499 ) && ( $_POST['sel_d_r'] < 600 ) ) {
+	} else if ( ( $rule_id == 2 ) || ( $rule_id > 499 && $rule_id < 600 ) ) {
 		echo '<div class="error notice is-dismissible"><p>' . __('Error: to change this rule, use the "Firewall Policies" menu.', 'ninjafirewall') .'</p></div>';
-	} else if (! isset( $nfw_rules[$_POST['sel_d_r']] ) ) {
+	} else if (! isset( $nfw_rules[ $rule_id ] ) ) {
 		echo '<div class="error notice is-dismissible"><p>' . __('Error: this rule does not exist.', 'ninjafirewall') .'</p></div>';
-	} elseif ($_POST['sel_d_r'] != 999) {
-		$nfw_rules[$_POST['sel_d_r']]['ena'] = 1;
+	} elseif ( $rule_id != 999 ) {
+		$nfw_rules[ $rule_id ]['ena'] = 1;
 		$is_update = 1;
-		echo '<div class="updated notice is-dismissible"><p>' . sprintf( __('Rule ID %s has been enabled.', 'ninjafirewall'), htmlentities($_POST['sel_d_r']) ) .'</p></div>';
+		echo '<div class="updated notice is-dismissible"><p>' . sprintf( esc_html__('Rule ID %s has been enabled.', 'ninjafirewall'), $rule_id ) .'</p></div>';
 	}
 }
 if ( $is_update ) {
-	nfw_update_option( 'nfw_rules', $nfw_rules);
+	nfw_update_option('nfw_rules', $nfw_rules);
 }
 
 $disabled_rules = $enabled_rules = array();
@@ -69,13 +74,10 @@ if ( empty( $nfw_rules ) ) {
 
 foreach ( $nfw_rules as $rule_key => $rule_value ) {
 	if ( $rule_key == 999 ) { continue; }
-
 	// Ingore firewall policies:
-	if ( $rule_key == 2 || $rule_key > 499 && $rule_key < 600 ) {
+	if ( $rule_key == 2 || ( $rule_key > 499 && $rule_key < 600 ) ) {
 		continue;
 	}
-
-
 	if (! empty( $nfw_rules[$rule_key]['ena'] ) ) {
 		$enabled_rules[] =  $rule_key;
 	} else {

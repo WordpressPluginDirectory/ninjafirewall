@@ -240,10 +240,26 @@ nf_not_allowed( 'block', __LINE__ );
 
 	</div>
 
+
+	<div class="feature-section is-wide has-2-columns">
+		<div class="column is-vertically-aligned-center">
+			<h3><?php _e('WP-CLI', 'ninjafirewall') ?></h3>
+			<p>
+			<?php _e('You can import and export your configuration from WP-CLI.', 'ninjafirewall') ?></p>
+		</div>
+		<div class="column">
+			<a href="<?php echo plugins_url() ?>/ninjafirewall/images/screenshots/wp-cli.png" class="thickbox"><img src="<?php echo plugins_url() ?>/ninjafirewall/images/screenshots/wp-cli.png" class="wpplus" title="<?php _e('Click to enlarge image.', 'ninjafirewall') ?>" /></a>
+			<p class="description aligncenter"><?php _e('Click to enlarge image.', 'ninjafirewall') ?></p>
+		</div>
+	</div>
+
+	<hr />
+
+
 	<hr />
 
 	<h3><b><a href="https://nintechnet.com/ninjafirewall/wp-edition/"><?php _e('Learn more</a> about the <font color="#21759B">WP+</font> Edition unique features.', 'ninjafirewall') ?></b></h3>
-	<h3><b><a href="https://nintechnet.com/ninjafirewall/wp-edition/?comparison"><?php _e('Compare</a> the WP and <font color="#21759B">WP+</font> Editions.', 'ninjafirewall') ?></b></h3>
+	<h3><b><a href="https://nintechnet.com/ninjafirewall/wp-edition/#features"><?php _e('Compare</a> the WP and <font color="#21759B">WP+</font> Editions.', 'ninjafirewall') ?></b></h3>
 
 	<hr />
 

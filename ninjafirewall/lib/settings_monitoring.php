@@ -52,12 +52,12 @@ if ( $_REQUEST['tab'] == 'filecheck' ) {
 
 	<!-- File Guard -->
 	<div id="fileguard-options"<?php echo $fileguard_div ?>>
-		<?php include __DIR__ .'/monitoring_file_guard.php'; ?>
+		<?php include __DIR__ .'/settings_monitoring_file_guard.php'; ?>
 	</div>
 
 	<!-- File Check -->
 	<div id="filecheck-options"<?php echo $filecheck_div ?>>
-		<?php include __DIR__ .'/monitoring_file_check.php'; ?>
+		<?php include __DIR__ .'/settings_monitoring_file_check.php'; ?>
 	</div>
 
 </div>

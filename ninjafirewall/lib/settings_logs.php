@@ -45,12 +45,12 @@ if ( $_REQUEST['tab'] == 'livelog' ) {
 
 	<!-- Firewall Log -->
 	<div id="firewalllog-options"<?php echo $firewalllog_div ?>>
-		<?php include __DIR__ .'/logs_firewall_log.php'; ?>
+		<?php include __DIR__ .'/settings_logs_firewall_log.php'; ?>
 	</div>
 
 	<!-- Live Log -->
 	<div id="livelog-options"<?php echo $livelog_div ?>>
-		<?php include __DIR__ .'/logs_live_log.php'; ?>
+		<?php include __DIR__ .'/settings_logs_live_log.php'; ?>
 	</div>
 </div>
 <?php

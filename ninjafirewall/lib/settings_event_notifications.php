@@ -219,7 +219,7 @@ if (! is_multisite() ) {
 		$nfw_options['alert_sa_only'] = 1;
 	}
 	if ($nfw_options['alert_sa_only'] == 3) {
-		$tmp_email = htmlspecialchars( $nfw_options['alert_email'] );
+		$tmp_email = $nfw_options['alert_email'];
 	} else {
 		$tmp_email = '';
 	}
@@ -231,7 +231,7 @@ if (! is_multisite() ) {
 			<td>
 			<p><label><input type="radio" name="nfw_options[alert_sa_only]" value="1"<?php checked( $nfw_options['alert_sa_only'], 1 ) ?> onclick="ac_radio_toogle(0,'alert_multirec');" />&nbsp;<?php _e('Only to me, the Super Admin', 'ninjafirewall') ?>, <?php echo '<code>'. htmlspecialchars(get_option('admin_email')) . '</code>'; ?> (<?php _e('default', 'ninjafirewall') ?>)</label></p>
 			<p><label><input type="radio" name="nfw_options[alert_sa_only]" value="2"<?php checked( $nfw_options['alert_sa_only'], 2) ?> onclick="ac_radio_toogle(0,'alert_multirec');" />&nbsp;<?php _e('To the administrator of the site where originated the alert', 'ninjafirewall') ?></label></p>
-			<p><label><input type="radio" name="nfw_options[alert_sa_only]" value="3"<?php checked( $nfw_options['alert_sa_only'], 3) ?> onclick="ac_radio_toogle(1,'alert_multirec');" />&nbsp;<?php _e('Other(s):', 'ninjafirewall') ?> </label><input class="regular-text" type="text" name="nfw_options[alert_multirec]" size="45" maxlength="250" value="<?php echo $tmp_email ?>" <?php disabled($tmp_email, '') ?>></p>
+			<p><label><input type="radio" name="nfw_options[alert_sa_only]" value="3"<?php checked( $nfw_options['alert_sa_only'], 3) ?> onclick="ac_radio_toogle(1,'alert_multirec');" />&nbsp;<?php _e('Other(s):', 'ninjafirewall') ?> </label><input class="regular-text" type="text" name="nfw_options[alert_multirec]" size="45" maxlength="250" value="<?php echo esc_attr( $tmp_email ); ?>" <?php disabled($tmp_email, '') ?>></p>
 			<span class="description"><?php _e('Multiple recipients must be comma-separated (e.g., <code>joe@example.org,alice@example.org</code>).', 'ninjafirewall') ?></span>
 			<input type="hidden" name="nfw_options[alert_email]" value="<?php echo htmlspecialchars(get_option('admin_email')); ?>">
 			</td>

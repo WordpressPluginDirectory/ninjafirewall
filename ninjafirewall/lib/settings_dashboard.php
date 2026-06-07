@@ -482,12 +482,12 @@ if (! empty( $_POST['delete-error-log'] ) ){
 
 	<!-- Monthly statistics -->
 	<div id="statistics-options"<?php echo $statistics_div ?>>
-		<?php include __DIR__ .'/dashboard_statistics.php'; ?>
+		<?php include __DIR__ .'/settings_dashboard_statistics.php'; ?>
 	</div>
 
 	<!-- About... -->
 	<div id="about-options"<?php echo $about_div ?>>
-		<?php include __DIR__ .'/dashboard_about.php'; ?>
+		<?php include __DIR__ .'/settings_dashboard_about.php'; ?>
 	</div>
 
 </div>

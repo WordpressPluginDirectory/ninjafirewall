@@ -14,7 +14,7 @@
  | but WITHOUT ANY WARRANTY; without even the implied warranty of      |
  | MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the       |
  | GNU General Public License for more details.                        |
- +---------------------------------------------------------------------+ i18n+ / sa / 2
+ +---------------------------------------------------------------------+
 */
 
 if (! defined( 'NFW_ENGINE_VERSION' ) ) { die( 'Forbidden' ); }
@@ -44,12 +44,26 @@ if (! is_writable( $log_dir . $monthly_log ) ) {
 global $available_logs;
 $available_logs = nf_sub_log_find_local( $log_dir );
 
+/**
+ * Save options.
+ */
 if (! empty( $_POST['nfw_act'] ) ) {
-	// Save public key:
-	if ( $_POST['nfw_act'] == 'pubkey' ) {
-		if ( empty($_POST['nfwnonce']) || ! wp_verify_nonce($_POST['nfwnonce'], 'clogs_pubkey') ) {
-			wp_nonce_ays('clogs_pubkey');
-		}
+	/**
+	 * Use the same nonce for all actions.
+	 */
+	if ( empty( $_POST['nfwnonce'] ) || ! wp_verify_nonce( $_POST['nfwnonce'], 'settings_log') ) {
+		wp_nonce_ays('settings_log');
+	}
+	if ( $_POST['nfw_act'] == 'save_options') {
+		nf_sub_log_save_options( $nfw_options );
+		$ok_msg = __('Your changes have been saved.', 'ninjafirewall');
+	/**
+	 * Save/delete public key.
+	 */
+	} elseif ( $_POST['nfw_act'] == 'pubkey') {
+		/**
+		 * Clear the key.
+		 */
 		if (isset( $_POST['delete_pubkey'] ) ) {
 			$_POST['nfw_options']['clogs_pubkey'] = '';
 			$ok_msg = __('Your public key has been deleted', 'ninjafirewall');
@@ -57,20 +71,18 @@ if (! empty( $_POST['nfw_act'] ) ) {
 			$ok_msg = __('Your public key has been saved', 'ninjafirewall');
 		}
 		nf_sub_log_save_pubkey( $nfw_options );
-	// Save log options:
-	} elseif ( $_POST['nfw_act'] == 'save_options' ) {
-		nf_sub_log_save_options( $nfw_options );
-		$ok_msg = __('Your changes have been saved.', 'ninjafirewall');
 	}
-	// Update options:
+	/**
+	 * Update options.
+	 */
 	$nfw_options = nfw_get_option( 'nfw_options' );
 }
 
 $max_lines = 1500;
 
 if ( isset( $_GET['nfw_logname'] ) ) {
-	if ( empty( $_GET['nfwnonce'] ) || ! wp_verify_nonce($_GET['nfwnonce'], 'log_select') ) {
-		wp_nonce_ays('log_select');
+	if ( empty( $_GET['nfwnonce'] ) || ! wp_verify_nonce($_GET['nfwnonce'], 'settings_log') ) {
+		wp_nonce_ays('settings_log');
 	}
 	$data = nf_sub_log_read_local( $_GET['nfw_logname'], $log_dir, $max_lines-1 );
 }
@@ -97,7 +109,7 @@ if ( isset( $data['lines'] ) && $data['lines'] > $max_lines ) {
 }
 
 
-echo '<center>' . __('Viewing:', 'ninjafirewall') . ' <select onChange=\'window.location="?page=nfsublog&nfwnonce='. wp_create_nonce('log_select') .'&nfw_logname=" + this.value;\'>';
+echo '<center>' . __('Viewing:', 'ninjafirewall') . ' <select onChange=\'window.location="?page=nfsublog&nfwnonce='. wp_create_nonce('settings_log') .'&nfw_logname=" + this.value;\'>';
 foreach ($available_logs as $log_name => $tmp) {
 	echo '<option value="' . $log_name . '"';
 	if ( $selected_log == $log_name ) {
@@ -141,9 +153,9 @@ if ( defined('NFW_TEXTAREA_HEIGHT') ) {
 					echo $logline;
 				} else {
 					if (! empty( $data['err_msg'] ) ) {
-						echo "\n\n > {$data['err_msg']}";
+						echo esc_textarea( "\n\n > {$data['err_msg']}" );
 					} else {
-						echo "\n\n > " . __('The selected log is empty.', 'ninjafirewall');
+						echo esc_textarea( "\n\n > " . __( 'The selected log is empty.', 'ninjafirewall' ) );
 					}
 				}
 				?></textarea>
@@ -162,7 +174,7 @@ if ( empty( $nfw_options['auto_del_log'] ) ) {
 
 ?>
 <h3><?php _e('Log Options', 'ninjafirewall') ?></h3>
-<form method="post" action="?page=nfsublog"><?php wp_nonce_field('log_save', 'nfwnonce', 0); ?>
+<form method="post" action="?page=nfsublog"><?php wp_nonce_field('settings_log', 'nfwnonce', 0); ?>
 	<table class="form-table nfw-table">
 		<tr>
 			<th scope="row" class="row-med"><?php _e('Auto-delete log', 'ninjafirewall') ?></th>
@@ -185,7 +197,7 @@ if ( empty( $nfw_options['auto_del_log'] ) ) {
 <form name="frmlog2" method="post" action="?page=nfsublog" onsubmit="return nfwjs_check_key();">
 	<?php
 
-	wp_nonce_field('clogs_pubkey', 'nfwnonce', 0);
+	wp_nonce_field('settings_log', 'nfwnonce', 0);
 	if ( empty( $nfw_options['clogs_pubkey'] ) || ! preg_match( '/^[a-f0-9]{40}:(?:[a-f0-9:.]{3,39}|\*)$/', $nfw_options['clogs_pubkey'] ) ) {
 		$nfw_options['clogs_pubkey'] = '';
 	}
@@ -282,7 +294,7 @@ function nf_sub_log_save_pubkey( $nfw_options ) {
 function nf_sub_log_read_local( $log, $log_dir, $max_lines ) {
 
 	if (! preg_match( '/^(firewall_\d{4}-\d\d(?:\.\d+)?\.)php$/', trim( $log ) ) ) {
-		wp_nonce_ays('log_select');
+		wp_nonce_ays('settings_log');
 	}
 
 	$data = array();

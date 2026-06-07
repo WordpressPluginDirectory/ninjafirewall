@@ -200,7 +200,7 @@ function help_nfsubpolicies() {
 
 		<p><strong>' . __('Block <code>POST</code> requests in the themes folder <code>/wp-content/themes</code>', 'ninjafirewall') .'</strong><br />' . __('This option can be useful to block hackers from installing backdoor in the PHP theme files. However, because some custom themes may include an HTML form (contact, search form etc), this option is not enabled by default.', 'ninjafirewall'). '</p>
 
-		<p><strong>' . __('Force HTTPS for admin and logins <code>FORCE_SSL_ADMIN</code>', 'ninjafirewall'). '</strong><br />' . __('Enable this option when you want to secure logins and the admin area so that both passwords and cookies are never sent in the clear. Ensure that you can access your admin console from HTTPS before enabling this option, otherwise you will lock yourself out of your site!', 'ninjafirewall'). '</p>
+		<p><strong>' . __('Force HTTPS for admin and logins <code>FORCE_SSL_ADMIN</code>', 'ninjafirewall'). '</strong><br />' . __('Enable this option when you want to secure logins and the admin area so that both passwords and cookies are never sent in the clear. Ensure that you can access your admin dashboard from HTTPS before enabling this option, otherwise you will lock yourself out of your site!', 'ninjafirewall'). '</p>
 
 		<p><strong>' . __('Disable the plugin and theme editor <code>DISALLOW_FILE_EDIT</code>', 'ninjafirewall'). '</strong><br />' . __('Disabling the plugin and theme editor provides an additional layer of security if a hacker gains access to a well-privileged user account.', 'ninjafirewall'). '</p>
 
@@ -377,7 +377,7 @@ function help_nfsubevent() {
 	get_current_screen()->add_help_tab( array(
 		'id'        => 'log01',
 		'title'     => __('Event Notifications', 'ninjafirewall'),
-		'content'   => '<br />' . __('NinjaFirewall can alert you by email on specific events triggered within your blog. They include installations, updates, activations etc, as well as users login and modification of any administrator account in the database. Some of those alerts are enabled by default and it is highly recommended to keep them enabled. It is not unusual for a hacker, after breaking into your WordPress admin console, to install or just to upload a backdoored plugin or theme in order to take full control of your website.', 'ninjafirewall')
+		'content'   => '<br />' . __('NinjaFirewall can alert you by email on specific events triggered within your blog. They include installations, updates, activations etc, as well as users login and modification of any administrator account in the database. Some of those alerts are enabled by default and it is highly recommended to keep them enabled. It is not unusual for a hacker, after breaking into your WordPress admin dashboard, to install or just to upload a backdoored plugin or theme in order to take full control of your website.', 'ninjafirewall')
 	) );
 }
 /* ------------------------------------------------------------------ */ // i18n+
@@ -398,7 +398,7 @@ function help_nfsublogin() {
 
 		<strong>' . __('Yes, if under attack:', 'ninjafirewall') . '</strong>
 		<br />' .
-		__('The protection will be triggered when too many login attempts are detected, regardless of the offending IP. It blocks the attack instantly and prevents it from reaching WordPress, but still allows you to access your administration console using either the predefined username/password combination or the captcha code.', 'ninjafirewall') . '
+		__('The protection will be triggered when too many login attempts are detected, regardless of the offending IP. It blocks the attack instantly and prevents it from reaching WordPress, but still allows you to access your admin dashboard using either the predefined username/password combination or the captcha code.', 'ninjafirewall') . '
 		<br />
 		<strong>' . __('Always ON:', 'ninjafirewall') . '</strong>
 		<br />'.

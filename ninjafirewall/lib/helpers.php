@@ -71,6 +71,9 @@ function nfw_toggle_switch( $type, $name, $text_on, $text_off,
 		$id = uniqid();
 	}
 
+	$name = esc_attr( $name );
+	$id   = esc_attr( $id );
+
 	if ( $disabled == false ) {
 		$disabled = '';
 	} else {

@@ -18,6 +18,11 @@ nf_not_allowed( 'block', __LINE__ );
 
 $nfw_options = nfw_get_option( 'nfw_options' );
 
+/**
+ * Import, export and backup restoration class.
+ */
+require_once __DIR__ .'/class-import-export.php';
+
 ?>
 <div class="wrap">
 	<h1><img style="vertical-align:top;width:33px;height:33px;" src="<?php echo plugins_url( '/ninjafirewall/images/ninjafirewall_32.png' ) ?>">&nbsp;<?php _e('Firewall Options', 'ninjafirewall') ?></h1>
@@ -138,14 +143,14 @@ if ( isset( $_POST['nfw_options'] ) ) {
 		<tr>
 			<th scope="row" class="row-med"><?php _e('Export configuration', 'ninjafirewall') ?></th>
 			<td>
-				<input class="button-secondary" type="submit" name="nf_export" value="<?php _e('Download', 'ninjafirewall') ?>" />
+				<input class="button-secondary" type="submit" name="ninjafirewall_export" value="<?php _e('Download', 'ninjafirewall') ?>" />
 				<p class="description"><?php _e( 'File Check configuration will not be exported/imported.', 'ninjafirewall') ?></p>
 			</td>
 		</tr>
 		<tr>
 			<th scope="row" class="row-med"><?php _e('Import configuration', 'ninjafirewall') ?></th>
 			<td>
-				<input type="file" name="nf_imp" />
+				<input type="file" name="ninjafirewall_import" />
 				<p class="description"><?php
 				list ( $major_current ) = explode( '.', NFW_ENGINE_VERSION );
 				printf( __( 'Imported configuration must match plugin version %s.', 'ninjafirewall'), (int) $major_current .'.x' );
@@ -209,38 +214,54 @@ function nf_sub_options_confbackup() {
 
 function nf_sub_options_save() {
 
-	// Save options :
+	/**
+	 * Save options.
+	 */
 
-	// Check if we are uploading/importing the configuration... :
-	if (! empty($_FILES['nf_imp']['size']) ) {
-		return nf_sub_options_import( $_FILES['nf_imp']['tmp_name'] );
+	$nfw_options = nfw_get_option('nfw_options');
+
+	/**
+	 * Check if we are uploading/importing the configuration.
+	 */
+	if (! empty( $_FILES['ninjafirewall_import']['size'] ) ) {
+		if ( empty( $_FILES['ninjafirewall_import']['tmp_name'] ) ||
+			! is_uploaded_file( $_FILES['ninjafirewall_import']['tmp_name'] ) ) {
+
+			return esc_html__('Invalid configuration upload', 'ninjafirewall');
+		}
+		return NinjaFirewall_ImpExp::import( $_FILES['ninjafirewall_import']['tmp_name'] );
 	}
-
-	// ...or restoring the configuration to an earlier date and return:
-	if (! empty( $_POST['backup_file'] ) && file_exists( NFW_LOG_DIR ."/nfwlog/cache/{$_POST['backup_file']}" ) ) {
-		return nf_sub_options_import( NFW_LOG_DIR ."/nfwlog/cache/{$_POST['backup_file']}" );
+	/**
+	 * Or restoring the configuration to an earlier date and return.
+	 */
+	$backup_file = '';
+	if (! empty( $_POST['backup_file'] ) ) {
+		$backup_file = basename( wp_unslash( $_POST['backup_file'] ) );
 	}
+	if ( $backup_file && preg_match( '/^backup_\d{10}_.+\.php$/', $backup_file ) &&
+		file_exists( NFW_LOG_DIR . "/nfwlog/cache/$backup_file" ) ) {
 
-	$nfw_options = nfw_get_option( 'nfw_options' );
+		return NinjaFirewall_ImpExp::import( NFW_LOG_DIR . "/nfwlog/cache/$backup_file" );
+	}
 
 	if ( empty( $_POST['nfw_options']['enabled']) ) {
 		if (! empty($nfw_options['enabled']) ) {
 			// Alert the admin :
-			nf_sub_options_alert(1);
+			NinjaFirewall_ImpExp::email_admin('disabled');
 		}
 		$nfw_options['enabled'] = 0;
 
 		// Disable brute-force protection
-		if ( file_exists( NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php' ) ) {
-			rename(NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php', NFW_LOG_DIR . '/nfwlog/cache/bf_conf_off.php');
+		if ( file_exists( NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php') ) {
+			rename(NFW_LOG_DIR .'/nfwlog/cache/bf_conf.php', NFW_LOG_DIR .'/nfwlog/cache/bf_conf_off.php');
 		}
 
 	} else {
 		$nfw_options['enabled'] = 1;
 
 		// Re-enable brute-force protection
-		if ( file_exists( NFW_LOG_DIR . '/nfwlog/cache/bf_conf_off.php' ) ) {
-			rename(NFW_LOG_DIR . '/nfwlog/cache/bf_conf_off.php', NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php');
+		if ( file_exists( NFW_LOG_DIR . '/nfwlog/cache/bf_conf_off.php') ) {
+			rename(NFW_LOG_DIR .'/nfwlog/cache/bf_conf_off.php', NFW_LOG_DIR .'/nfwlog/cache/bf_conf.php');
 		}
 	}
 
@@ -268,14 +289,16 @@ function nf_sub_options_save() {
 	} else {
 		if ( empty($nfw_options['debug']) ) {
 			// Alert the admin :
-			nf_sub_options_alert(2);
+			NinjaFirewall_ImpExp::email_admin('debugging');
 		}
 		$nfw_options['debug'] = 1;
 	}
 
-	// Logo
-	$nfw_options['logo'] = plugins_url() . '/ninjafirewall/images/ninjafirewall_75.png';
-	$nfw_options['logo'] = preg_replace( '/^https?:/', '', $nfw_options['logo'] );
+	/**
+	 * Logo.
+	 */
+	$nfw_options['logo'] = plugins_url('images/ninjafirewall_75.png', dirname( __FILE__ ) );
+	$nfw_options['logo'] = preg_replace('/^https?:/', '', $nfw_options['logo'] );
 
 	// Save them :
 	nfw_update_option( 'nfw_options', $nfw_options);
@@ -287,186 +310,6 @@ function nf_sub_options_save() {
 		nfw_create_scheduled_tasks();
 	}
 
-}
-// ---------------------------------------------------------------------
-
-function nf_sub_options_import( $file ) {
-
-	// Import NF configuration from file :
-
-	$data = file_get_contents( $file );
-	$err_msg = __('Uploaded file is either corrupted or its format is not supported (#%s)', 'ninjafirewall');
-	if (! $data) {
-		return sprintf($err_msg, 1);
-	}
-	$data = str_replace( '<?php exit; ?>', '', $data );
-	// Is it base64-encoded (since 4.3.5)?
-	if ( $data[0] == 'B' ) {
-		// Decode it
-		$data = ltrim( $data, 'B' );
-		$data = base64_decode( $data );
-	}
-	@list ($nfw_options, $rules, $bf) = @explode("\n:-:\n", $data . "\n:-:\n");
-
-	// Detect and remove potential Unicode BOM:
-	if ( preg_match( '/^\xef\xbb\xbf/', $nfw_options ) ) {
-		$nfw_options = preg_replace( '/^\xef\xbb\xbf/', '', $nfw_options );
-	}
-
-	if (! $nfw_options || ! $rules) {
-		return sprintf($err_msg, 2);
-	}
-
-	$nfw_options = @json_decode( $nfw_options, true );
-	$nfw_rules = @json_decode( $rules, true );
-	if (! empty( $bf ) ) {
-		$bf_conf = json_decode( $bf, true );
-	}
-
-	if ( empty($nfw_options['engine_version']) ) {
-		return sprintf($err_msg, 3);
-	}
-
-	// Make sure the major version numbers match (3.x, 4.x etc):
-	list ( $major_current ) = explode( '.', NFW_ENGINE_VERSION );
-	list ( $major_import ) = explode( '.', $nfw_options['engine_version'] );
-	if ( $major_current != $major_import ) {
-		return esc_html__('The imported file is not compatible with that version of NinjaFirewall', 'ninjafirewall');
-	}
-	if ( $major_import < '4' ) {
-		if ( empty( $nfw_options['allow_local_ip'] ) ) {
-			$nfw_options['allow_local_ip'] = 1;
-		} else {
-			$nfw_options['allow_local_ip'] = 0;
-		}
-	}
-
-	// We cannot import WP+ config :
-	if ( isset($nfw_options['shmop']) ) {
-		return sprintf($err_msg, 4);
-	}
-
-	if ( empty($nfw_rules[1]) ) {
-		return sprintf($err_msg, 5);
-	}
-
-	// Dropins code:
-	if ( isset( $nfw_rules['dropins'] ) ) {
-		if ( $nfw_rules['dropins'] == 'delete' ) {
-			if ( file_exists( NFW_LOG_DIR .'/nfwlog/dropins.php' ) ) {
-				@unlink( NFW_LOG_DIR .'/nfwlog/dropins.php' );
-			}
-		} else {
-			$dropins = base64_decode( $nfw_rules['dropins'], true );
-			if ( $dropins !== false ) {
-				@file_put_contents( NFW_LOG_DIR .'/nfwlog/dropins.php', $dropins, LOCK_EX );
-			}
-		}
-		unset( $nfw_rules['dropins'] );
-	}
-
-	// Fix paths and directories:
-	$nfw_options['logo'] = plugins_url() . '/ninjafirewall/images/ninjafirewall_75.png';
-	$nfw_options['logo'] = preg_replace( '/^https?:/', '', $nfw_options['logo'] );
-
-	// We must preserve the previous option, but we still need to adjust
-	// the paths because WP_CONTENT_DIR can be user-defined and thus different (e.g., server migration):
-	if ( isset( $nfw_options['wp_dir'] ) ) {
-		$nfw_options['wp_dir'] = preg_replace( '`(^|\|)/([^/]+)(/\(\?:uploads\|blogs\\\.dir\)/)`', "$1/" .basename(WP_CONTENT_DIR). "$3", $nfw_options['wp_dir'] );
-	}
-
-	if (! empty( $_FILES['nf_imp']['tmp_name'] ) && $file == $_FILES['nf_imp']['tmp_name'] ) {
-		// We don't import the File Check 'snapshot directory' path
-		// (applies to imported configuration, not to restoration of configuration backup):
-		$nfw_options['snapdir'] = '';
-		$nfw_options['sched_scan'] = '';
-	}
-
-	// Check compatibility before importing HSTS headers configration
-	// or unset the option :
-	if (! function_exists('header_register_callback') || ! function_exists('headers_list') || ! function_exists('header_remove') ) {
-		if ( isset($nfw_options['response_headers']) ) {
-			unset($nfw_options['response_headers']);
-		}
-	}
-
-	// If brute force protection is enabled, we need to create a new config file :
-	$nfwbfd_log = NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php';
-	if (! empty($bf_conf) ) {
-		$fh = fopen($nfwbfd_log, 'w');
-		fwrite($fh, $bf_conf);
-		fclose($fh);
-	} else {
-	// ...or delete the current one, if any :
-		if ( file_exists($nfwbfd_log) ) {
-			unlink($nfwbfd_log);
-		}
-	}
-	// Save options :
-	nfw_update_option( 'nfw_options', $nfw_options);
-
-	// Add the correct DOCUMENT_ROOT :
-	if ( strlen( $_SERVER['DOCUMENT_ROOT'] ) > 5 ) {
-		$nfw_rules[NFW_DOC_ROOT]['cha'][1]['wha'] = str_replace( '/', '/[./]*', $_SERVER['DOCUMENT_ROOT'] );
-	} elseif ( strlen( getenv( 'DOCUMENT_ROOT' ) ) > 5 ) {
-		$nfw_rules[NFW_DOC_ROOT]['cha'][1]['wha'] = str_replace( '/', '/[./]*', getenv( 'DOCUMENT_ROOT' ) );
-	} else {
-		$nfw_rules[NFW_DOC_ROOT]['ena']  = 0;
-	}
-
-	// Save rules :
-	nfw_update_option( 'nfw_rules', $nfw_rules);
-
-	// Recreate cronjobs if needed
-	nfw_create_scheduled_tasks();
-
-	// Alert the admin :
-	nf_sub_options_alert(3);
-
-	return;
-}
-
-// ---------------------------------------------------------------------
-
-function nf_sub_options_alert( $what ) {
-
-	global $current_user;
-	$current_user = wp_get_current_user();
-
-	/**
-	 * Home URL.
-	 */
-	if ( is_multisite() ) {
-		$url = network_home_url('/');
-	} else {
-		$url = home_url('/');
-	}
-
-	/**
-	 * Disabled.
-	 */
-	if ( $what == 1 ) {
-		$template = 'disabled';
-	/**
-	 * Debugging mode.
-	 */
-	} elseif ( $what == 2 ) {
-		$template = 'debugging';
-	/**
-	 * Override settings.
-	 */
-	} else {
-		$template = 'fw_override';
-	}
-
-	/**
-	 * Email notification.
-	 */
-	$subject = [ ];
-	$content = [ "{$current_user->user_login} ({$current_user->roles[0]})",
-					NFW_REMOTE_ADDR, ucfirst( date_i18n('F j, Y @ H:i:s O') ), $url ];
-
-	NinjaFirewall_mail::send( $template, $subject, $content, '', [], 1 );
 }
 
 // ---------------------------------------------------------------------

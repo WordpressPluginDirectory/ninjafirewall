@@ -146,7 +146,7 @@ if ( empty( $nfw_options['liveformat'] ) ) {
 	$liveformat = '';
 } else {
 	$lf = 1;
-	$liveformat = htmlspecialchars( $nfw_options['liveformat'] );
+	$liveformat = $nfw_options['liveformat'];
 }
 
 if ( empty( $nfw_options['liveport'] ) ||
@@ -199,7 +199,7 @@ if ( empty( $nfw_options['liverulespath'] ) ) {
 			<th scope="row" class="row-med"><?php esc_html_e('Format', 'ninjafirewall') ?></th>
 			<td>
 				<p><label><input type="radio" name="lf" value="0"<?php checked($lf, 0) ?> onclick="document.getElementById('liveformat').disabled=true"><code>[%time] %name %client &quot;%method %uri&quot; &quot;%referrer&quot; &quot;%ua&quot; &quot;%forward&quot; &quot;%host&quot;</code></label></p>
-				<p><label><input type="radio" name="lf" value="1"<?php checked($lf, 1) ?> onclick="document.getElementById('liveformat').disabled=false;document.getElementById('liveformat').focus()"><?php esc_html_e('Custom', 'ninjafirewall') ?> </label><input id="liveformat" type="text" class="regular-text" name="liveformat" value="<?php echo $liveformat ?>"<?php disabled($lf, 0) ?> autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" /></p>
+				<p><label><input type="radio" name="lf" value="1"<?php checked($lf, 1) ?> onclick="document.getElementById('liveformat').disabled=false;document.getElementById('liveformat').focus()"><?php esc_html_e('Custom', 'ninjafirewall') ?> </label><input id="liveformat" type="text" class="regular-text" name="liveformat" value="<?php echo esc_attr( $liveformat ); ?>"<?php disabled($lf, 0) ?> autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" /></p>
 				<p class="description"><?php esc_html_e('See contextual help for available log format.', 'ninjafirewall') ?></p>
 			</td>
 		</tr>

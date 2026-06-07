@@ -3,7 +3,7 @@
 Plugin Name: NinjaFirewall (WP Edition)
 Plugin URI: https://nintechnet.com/
 Description: A true Web Application Firewall to protect and secure WordPress.
-Version: 4.8.4
+Version: 4.8.6
 Author: The Ninja Technologies Network
 Author URI: https://nintechnet.com/
 License: GPLv3 or later
@@ -11,7 +11,7 @@ Network: true
 Text Domain: ninjafirewall
 Domain Path: /languages
 */
-define('NFW_ENGINE_VERSION', '4.8.4');
+define('NFW_ENGINE_VERSION', '4.8.6');
 /*
  +=====================================================================+
  |    _   _ _        _       _____ _                        _ _        |
@@ -98,8 +98,8 @@ require_once __DIR__ . '/lib/class-helpers.php';
 require_once __DIR__ .'/lib/class_mail.php';
 
 require __DIR__ . '/lib/scheduled_tasks.php';
-require __DIR__ . '/lib/utils.php';
-require __DIR__ . '/lib/events.php';
+require __DIR__ . '/lib/helpers.php';
+require __DIR__ . '/lib/settings_events.php';
 
 add_action( 'nfwgccron', 'nfw_garbage_collector' );
 
@@ -114,33 +114,64 @@ function nfw_activate() {
 	}
 
 	if (! isset( $php_cli ) ) {
-		// Warn if the user does not have the 'unfiltered_html' capability:
+		/**
+		 * Warn if the user does not have the 'unfiltered_html' capability.
+		 */
 		if (! current_user_can('unfiltered_html') ) {
-			exit( esc_html__('You do not have "unfiltered_html" capability. Please enable it in order to run NinjaFirewall (or make sure you do not have "DISALLOW_UNFILTERED_HTML" in your wp-config.php script).', 'ninjafirewall'));
+			wp_die(
+				esc_html__('You do not have "unfiltered_html" capability. Please enable it in order to run NinjaFirewall (or make sure you do not have "DISALLOW_UNFILTERED_HTML" in your wp-config.php script).', 'ninjafirewall'),
+				esc_html__('Plugin Activation Error', 'ninjafirewall'),
+				['back_link' => true ]
+			);
 		}
-
-		nf_not_allowed( 'block', __LINE__ );
 	}
 
+	/**
+	 * WordPress minimum version.
+	 */
 	global $wp_version;
-	if ( version_compare( $wp_version, '4.7.0', '<' ) ) {
-		exit( sprintf( esc_html__('NinjaFirewall requires WordPress %s or greater but your current version is %s.', 'ninjafirewall'), '4.7.0', $wp_version) );
+	if ( version_compare( $wp_version, '4.7.0', '<') ) {
+		wp_die( sprintf(
+			esc_html__('NinjaFirewall requires WordPress %s or greater but your current version is %s.', 'ninjafirewall'), '4.7.0', $wp_version
+			),
+			esc_html__('Plugin Activation Error', 'ninjafirewall'),
+			['back_link' => true ]
+		);
 	}
 
-	if ( version_compare( PHP_VERSION, '7.1.0', '<' ) ) {
-		exit( sprintf( esc_html__('NinjaFirewall requires PHP 7.1 or greater but your current version is %s.', 'ninjafirewall'), PHP_VERSION) );
+	/**
+	 * PHP  minimum version.
+	 */
+	if ( version_compare( PHP_VERSION, '7.1.0', '<') ) {
+		wp_die( sprintf(
+			esc_html__('NinjaFirewall requires PHP 7.1 or greater but your current version is %s.', 'ninjafirewall'), PHP_VERSION
+			),
+			esc_html__('Plugin Activation Error', 'ninjafirewall'),
+			['back_link' => true ]
+		);
 	}
 
+	/**
+	 * We need the mysqli extension loaded.
+	 */
 	if (! function_exists('mysqli_connect') ) {
-		exit( sprintf( esc_html__('NinjaFirewall requires the PHP %s extension.', 'ninjafirewall'), '<code>mysqli</code>') );
+		wp_die( sprintf(
+			esc_html__('NinjaFirewall requires the PHP %s extension.', 'ninjafirewall'), '<code>mysqli</code>'
+			),
+			esc_html__('Plugin Activation Error', 'ninjafirewall'),
+			['back_link' => true ]
+		);
 	}
 
-	if ( ini_get( 'safe_mode' ) ) {
-		exit( esc_html__('You have SAFE_MODE enabled. Please disable it, it is deprecated as of PHP 5.3.0 (see http://php.net/safe-mode).', 'ninjafirewall'));
-	}
-
-	if ( PATH_SEPARATOR == ';' ) {
-		exit( esc_html__('NinjaFirewall is not compatible with Microsoft Windows.', 'ninjafirewall') );
+	/**
+	 * We don't do Windows.
+	 */
+	if ( PATH_SEPARATOR == ';') {
+		wp_die(
+			esc_html__('NinjaFirewall is not compatible with Microsoft Windows.', 'ninjafirewall'),
+			esc_html__('Plugin Activation Error', 'ninjafirewall'),
+			['back_link' => true ]
+		);
 	}
 
 	if (! $nfw_options = nfw_get_option( 'nfw_options' ) ) {
@@ -161,7 +192,10 @@ function nfw_activate() {
 
 	$res = nfw_enable_wpwaf();
 	if (! empty( $res ) ){
-		exit( $res );
+		/**
+		 * Display WAF activation errors.
+		 */
+		wp_die( $res );
 	}
 
 	// Create scheduled tasks.
@@ -324,7 +358,7 @@ function nfw_load_ext( $hook ) {
 		'warn_sanitise' =>
 			__('Any character that is not a letter [a-zA-Z], a digit [0-9], a dot [.], a hyphen [-] or an underscore [_] will be removed from the filename and replaced with the substitution character. Continue?', 'ninjafirewall'),
 		'ssl_warning' =>
-			__('Ensure that you can access your admin console over HTTPS before enabling this option, otherwise you will lock yourself out of your site. Continue?', 'ninjafirewall'),
+			__('Ensure that you can access your admin dashboard over HTTPS before enabling this option, otherwise you will lock yourself out of your site. Continue?', 'ninjafirewall'),
 		'woo_warning' =>
 			__("WooCommerce is running: if you block accounts creation, your customers won't be able to sign up. Continue?", 'ninjafirewall'),
 		'reguser_warning' =>
@@ -422,27 +456,13 @@ function nfw_admin_init() {
 		nfw_verify_secupdates();
 	}
 
-	// Export configuration:
-	if ( isset($_POST['nf_export']) ) {
-		if ( empty($_POST['nfwnonce']) || ! wp_verify_nonce($_POST['nfwnonce'], 'options_save') ) {
-			wp_nonce_ays('options_save');
-		}
-		$nfwbfd_log = NFW_LOG_DIR . '/nfwlog/cache/bf_conf.php';
-		if ( file_exists($nfwbfd_log) ) {
-			$bd_data = json_encode( file_get_contents($nfwbfd_log) );
-		} else {
-			$bd_data = '';
-		}
-		// Dropins
-		if ( file_exists( NFW_LOG_DIR .'/nfwlog/dropins.php' ) ) {
-			$nfw_rules['dropins'] = base64_encode( file_get_contents( NFW_LOG_DIR .'/nfwlog/dropins.php' ) );
-		}
-		$data = json_encode($nfw_options) . "\n:-:\n" . json_encode($nfw_rules) . "\n:-:\n" . $bd_data;
-		header('Content-Type: text/plain');
-		header('Content-Length: '. strlen( $data ) );
-		header('Content-Disposition: attachment; filename="nfwp.' . NFW_ENGINE_VERSION . '.dat"');
-		echo $data;
-		exit;
+	/**
+	 * Export NinjaFirewall's configuration.
+	 */
+	if ( isset( $_POST['ninjafirewall_export'] ) ) {
+
+		require_once __DIR__ .'/lib/class-import-export.php';
+		NinjaFirewall_ImpExp::export();
 	}
 
 	// Download File Check modified files list:
@@ -479,10 +499,16 @@ function nfw_admin_init() {
 		}
 		fclose($fh);
 		$data .= "\n== EOF\n";
-
+		/**
+		 * Use the home_url instead of SERVER_NAME, as they could be different.
+		 */
+		$dl_name = sanitize_file_name( wp_parse_url( home_url(), PHP_URL_HOST ) );
+		if ( empty( $dl_name ) ) {
+			$dl_name = sanitize_file_name( $_SERVER['SERVER_NAME'] );
+		}
 		header('Content-Type: text/plain');
 		header('Content-Length: '. strlen( $data ) );
-		header('Content-Disposition: attachment; filename="'. $_SERVER['SERVER_NAME'] .'_diff.txt"');
+		header('Content-Disposition: attachment; filename="'. $dl_name .'_diff.txt"');
 		echo $data;
 		exit;
 	}
@@ -506,9 +532,16 @@ function nfw_admin_init() {
 			}
 			fclose($fh);
 			$data .= "\n== EOF\n";
+			/**
+			 * Use the home_url instead of SERVER_NAME, as they could be different.
+			 */
+			$dl_name = sanitize_file_name( wp_parse_url( home_url(), PHP_URL_HOST ) );
+			if ( empty( $dl_name ) ) {
+				$dl_name = sanitize_file_name( $_SERVER['SERVER_NAME'] );
+			}
 			header('Content-Type: text/plain');
 			header('Content-Length: '. strlen( $data ) );
-			header('Content-Disposition: attachment; filename="'. $_SERVER['SERVER_NAME'] .'_snapshot.txt"');
+			header('Content-Disposition: attachment; filename="'. $dl_name .'_snapshot.txt"');
 			echo $data;
 			exit;
 		} else {
@@ -699,7 +732,7 @@ function nfw_fullwafsetup() {
 		// Make changes
 		$ret = nfw_fullwaf_htaccess( $httpserver );
 		if ( $ret !== true ) {
-			echo $ret;
+			echo esc_html( $ret );
 		} else {
 			set_transient( 'nfw_fullwaf', "{$httpserver}:{$time}", 60 * 5 );
 			echo '200';
@@ -727,14 +760,14 @@ function nfw_fullwafsetup() {
 		// Set up the htaccess file
 		$ret = nfw_fullwaf_htaccess( $httpserver );
 		if ( $ret !== true ) {
-			echo $ret;
+			echo esc_html( $ret );
 			wp_die();
 		}
 	}
 	// ini file
 	$ret = nfw_fullwaf_ini( $httpserver, $initype );
 	if ( $ret !== true ) {
-		echo $ret;
+		echo esc_html( $ret );
 		wp_die();
 	} else {
 		// Add 5-minute notice to the overview page
@@ -785,18 +818,18 @@ function nfw_fullwafconfig() {
 
 function nfw_save_waf_exclusionlist( $input ) {
 
-	$nfw_options = nfw_get_option( 'nfw_options' );
+	$nfw_options = nfw_get_option('nfw_options');
 
 	// Retrieve the list of excluded folders, if any, and save it
 	$tmp_exclude_waf_list = json_decode( stripslashes( $input ) );
 	if ( $tmp_exclude_waf_list === false || $tmp_exclude_waf_list === null ) {
-		printf( esc_html__('Error: missing parameter (%s).', 'ninjafirewall'), 'list' );
+		printf( esc_html__('Error: missing parameter (%s).', 'ninjafirewall'), 'list');
 		wp_die();
 	}
 	$exclude_waf_list = [];
 	if (! empty( $tmp_exclude_waf_list ) ) {
 		foreach( $tmp_exclude_waf_list as $folder ) {
-			if ( is_dir( ABSPATH . $folder ) ) {
+			if ( is_dir( realpath( ABSPATH . $folder ) ) ) {
 				$exclude_waf_list[] = $folder;
 			}
 		}
@@ -807,7 +840,7 @@ function nfw_save_waf_exclusionlist( $input ) {
 	} else {
 		unset( $nfw_options['exclude_waf_list'] );
 	}
-	nfw_update_option( 'nfw_options', $nfw_options);
+	nfw_update_option('nfw_options', $nfw_options);
 	// (Re)create the loader
 	require_once __DIR__ .'/lib/install_default.php';
 	nfw_create_loader();
@@ -977,7 +1010,7 @@ if ( is_multisite() )  {
 function nf_sub_main() {
 
 	// Main menu (Overview)
-	require plugin_dir_path(__FILE__) . 'lib/dashboard.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_dashboard.php';
 
 }
 
@@ -985,7 +1018,7 @@ function nf_sub_main() {
 
 function nf_sub_options() { // i18n
 
-	require plugin_dir_path(__FILE__) . 'lib/firewall_options.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_firewall_options.php';
 
 }
 
@@ -994,7 +1027,7 @@ function nf_sub_options() { // i18n
 function nf_sub_policies() {
 
 	// Firewall Policies menu
-	require plugin_dir_path(__FILE__) . 'lib/firewall_policies.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_firewall_policies.php';
 
 }
 
@@ -1002,7 +1035,7 @@ function nf_sub_policies() {
 
 function nf_sub_monitoring() {
 
-	require plugin_dir_path(__FILE__) . 'lib/monitoring.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_monitoring.php';
 
 }
 add_action('nfscanevent', 'nfscando');
@@ -1018,7 +1051,7 @@ function nfscando() {
 function nf_sub_network() {
 
 	// Network menu (multi-site only)
-	require plugin_dir_path(__FILE__) . 'lib/network.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_network.php';
 
 }
 
@@ -1034,7 +1067,7 @@ function nf_sub_malwarescan() {
 
 function nf_sub_event() {
 
-	require plugin_dir_path(__FILE__) . 'lib/event_notifications.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_event_notifications.php';
 
 }
 
@@ -1051,7 +1084,7 @@ function nfdailyreportdo() {
 
 function nf_sub_log() {
 
-	require plugin_dir_path(__FILE__) . 'lib/logs.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_logs.php';
 
 }
 
@@ -1059,7 +1092,7 @@ function nf_sub_log() {
 
 function nf_sub_loginprot() {
 
-	require plugin_dir_path(__FILE__) . 'lib/login_protection.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_login_protection.php';
 
 }
 
@@ -1067,7 +1100,7 @@ function nf_sub_loginprot() {
 
 function nf_sub_updates() {
 
-	require plugin_dir_path(__FILE__) . 'lib/security_rules.php';
+	require plugin_dir_path(__FILE__) . 'lib/settings_security_rules.php';
 
 }
 

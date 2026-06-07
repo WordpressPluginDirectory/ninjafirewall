@@ -253,11 +253,11 @@ This protection (and notification) can be turned off from NinjaFirewall "Firewal
  * NinjaFirewall > Event Notifications > WordPress admin dashboard.
  */
 
-$template['user_login']['subject'] = __('Alert: WordPress console login', 'ninjafirewall');
+$template['user_login']['subject'] = __('Alert: WordPress admin dashboard login', 'ninjafirewall');
 
 /* Translators: 1=username, 2=IP, 3=date, 4=blog url */
 $template['user_login']['content'] = __(
-'Someone just logged in to your WordPress admin console:
+'Someone just logged in to your WordPress admin dashboard:
 
 User : %1$s
 IP   : %2$s
